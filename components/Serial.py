@@ -1,17 +1,8 @@
+from components.Exceptions import TimeoutException, ConnectionRefusalException
 import serial
 import time
 import signal
 import re
-
-
-class TimeoutException(Exception):
-    def __init__(self, *args, **kwargs):
-        Exception.__init__(self, *args, **kwargs)
-
-
-class ConnectionRefusalException(Exception):
-    def __init__(self, *args, **kwargs):
-        Exception.__init__(self, *args, **kwargs)
 
 
 def _timeout(signum, frame):
@@ -28,7 +19,7 @@ class Serial:
     __max_tries = 3
 
     def __init__(self, device_file):
-        """Construct setup with 9600 baud > device file"""
+        """Construct setup with 9600/N/8/1 > device file"""
         # Initialize serial conn
         self.__device_file = device_file
         self.__conn = serial.Serial(self.__device_file)
@@ -40,7 +31,7 @@ class Serial:
 
     def read_stop(self, command, regex=r'\\r\\n', timeout=5):
         """Sends command to board. Returns content until stop string satisfied or timeout (s).
-        Raises ConnectionRefusalException."""
+        Raises ConnectionRefusalException. Returns byte array of ASCII chars response."""
         # compile regex
         _re = re.compile(regex)
         # send the command
@@ -84,16 +75,19 @@ class Serial:
             # last line of main menu in boot loader
             while line != b'run    - run the flash application\r\n':
                 line = self.__conn.readline()
+            signal.alarm(0)
+            print('Serial:: Connection succeeded.')
         except TimeoutException:
             self.__conn_tries += 1
-            if self.__conn_tries < self.__max_tries:
+            if self.__conn_tries <= self.__max_tries:
                 print('Serial:: Retrying... Attempt {} of {}'.format(self.__conn_tries, self.__max_tries))
                 # recurse
+                signal.alarm(0)
                 self._verify_connection()
             else:
                 self.__conn_tries = 1
+                signal.alarm(0)
                 raise ConnectionRefusalException('Connection failed after {} attempts'.format(self.__max_tries))
-        print('Serial:: Connection succeeded.')
 
     def close(self):
         """Close connection."""
