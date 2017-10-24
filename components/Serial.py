@@ -19,7 +19,7 @@ class Serial:
     __max_tries = 3
 
     def __init__(self, device_file):
-        """Construct setup with 9600/N/8/1 > device file"""
+        """Construct serial setup with 9600/N/8/1 >> device file"""
         # Initialize serial conn
         self.__device_file = device_file
         self.__conn = serial.Serial(self.__device_file)
@@ -60,38 +60,38 @@ class Serial:
         else:
             print('Serial::open:: Connection already open.')
 
-    def _verify_connection(self):
+    def _verify_connection(self, timeout=7):
         """Verifies connection."""
+        if self.__conn_tries > self.__max_tries:
+            # reset connection tries
+            self.__conn_tries = 1
+            raise ConnectionRefusalException('Connection failed after {} attempts'.format(self.__max_tries))
         # Reading variable
-        print('Serial::_verify_connection:: Verifying connection with ' + self.__device_file)
+        print('Serial::_verify_connection:: Verifying connection with', self.__device_file)
         line = ''
         # Initialize timeout
         signal.signal(signal.SIGALRM, _timeout)
         # Start timeout
-        signal.alarm(5)
+        signal.alarm(timeout)
         # init help function
         self.__conn.write(b'?\n')
         try:
             # last line of main menu in boot loader
             while line != b'run    - run the flash application\r\n':
                 line = self.__conn.readline()
-            signal.alarm(0)
+            # reset connection tries
+            self.__conn_tries = 1
             print('Serial::_verify_connection:: Connection succeeded.')
         except TimeoutException:
             self.__conn_tries += 1
             if self.__conn_tries <= self.__max_tries:
                 print('Serial::_verify_connection:: Retrying... Attempt {} of {}'.format(self.__conn_tries, self.__max_tries))
-                # recurse
-                signal.alarm(0)
-                self._verify_connection()
-            else:
-                self.__conn_tries = 1
-                signal.alarm(0)
-                raise ConnectionRefusalException('Connection failed after {} attempts'.format(self.__max_tries))
+        # recurse
+        self._verify_conection()
 
     def close(self):
         """Close connection."""
-        print('Serial::close:: Closing connection with ' + self.__device_file)
+        print('Serial::close:: Closing connection with', self.__device_file)
         self.__conn.close()
 
 
