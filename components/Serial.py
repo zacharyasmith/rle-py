@@ -53,17 +53,17 @@ class Serial:
 
     def open(self):
         """Opens connection with board if closed."""
-        print('Serial:: Opening connection...')
+        print('Serial::open:: Opening connection...')
         if not self.__conn.is_open:
             self.__conn.open()
             self._verify_connection()
         else:
-            print('Serial:: Connection already open.')
+            print('Serial::open:: Connection already open.')
 
     def _verify_connection(self):
         """Verifies connection."""
         # Reading variable
-        print('Serial:: Verifying connection with ' + self.__device_file)
+        print('Serial::_verify_connection:: Verifying connection with ' + self.__device_file)
         line = ''
         # Initialize timeout
         signal.signal(signal.SIGALRM, _timeout)
@@ -76,11 +76,11 @@ class Serial:
             while line != b'run    - run the flash application\r\n':
                 line = self.__conn.readline()
             signal.alarm(0)
-            print('Serial:: Connection succeeded.')
+            print('Serial::_verify_connection:: Connection succeeded.')
         except TimeoutException:
             self.__conn_tries += 1
             if self.__conn_tries <= self.__max_tries:
-                print('Serial:: Retrying... Attempt {} of {}'.format(self.__conn_tries, self.__max_tries))
+                print('Serial::_verify_connection:: Retrying... Attempt {} of {}'.format(self.__conn_tries, self.__max_tries))
                 # recurse
                 signal.alarm(0)
                 self._verify_connection()
@@ -91,7 +91,7 @@ class Serial:
 
     def close(self):
         """Close connection."""
-        print('Serial:: Closing connection with ' + self.__device_file)
+        print('Serial::close:: Closing connection with ' + self.__device_file)
         self.__conn.close()
 
 
