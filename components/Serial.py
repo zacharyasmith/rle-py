@@ -28,8 +28,9 @@ class Serial:
     def send_command(self, command):
         """Sends command to the board."""
         self.__conn.write(command)
+        self.__conn.reset_output_buffer()
 
-    def read_stop(self, command, regex=r'\\r\\n', timeout=5):
+    def read_stop(self, command, regex=r'', timeout=5):
         """Sends command to board. Returns content until stop string satisfied or timeout (s).
         Raises ConnectionRefusalException. Returns byte array of ASCII chars response."""
         # compile regex
@@ -43,12 +44,15 @@ class Serial:
         # start timeout
         signal.alarm(timeout)
         found = False
-        while not found:
-            # grab response
-            line = self.__conn.readline()
-            ret_val += line
-            # set found lv
-            found = _re.search(str(line))
+        try:
+            while not found:
+                # grab response
+                line = self.__conn.readline()
+                ret_val += line
+                # set found lv
+                found = _re.search(str(line))
+        finally:
+            self.__conn.reset_input_buffer()
         return ret_val
 
     def open(self):
@@ -74,7 +78,7 @@ class Serial:
         # Start timeout
         signal.alarm(timeout)
         # init help function
-        self.__conn.write(b'?\n')
+        self.__conn.write(b'?\r\n')
         try:
             # last line of main menu in boot loader
             while line != b'run    - run the flash application\r\n':
@@ -86,8 +90,8 @@ class Serial:
             self.__conn_tries += 1
             if self.__conn_tries <= self.__max_tries:
                 print('Serial::_verify_connection:: Retrying... Attempt {} of {}'.format(self.__conn_tries, self.__max_tries))
-        # recurse
-        self._verify_conection()
+            # recurse
+            self._verify_connection(timeout)
 
     def close(self):
         """Close connection."""
