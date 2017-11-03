@@ -19,20 +19,35 @@ class Serial:
     __max_tries = 3
 
     def __init__(self, device_file):
-        """Construct serial setup with 9600/N/8/1 >> device file"""
+        """
+        Construct serial setup with 9600/N/8/1 >> device file
+
+        :param device_file: e.g. /dev/ttyUSB0
+        """
         # Initialize serial conn
         self.__device_file = device_file
         self.__conn = serial.Serial(self.__device_file)
         self._verify_connection()
 
     def send_command(self, command):
-        """Sends command to the board."""
+        """
+        Sends command to the board.
+
+        :param command: byte array to send over serial comm link
+        """
         self.__conn.write(command)
         self.__conn.reset_output_buffer()
 
     def read_stop(self, command, regex=r'', timeout=5):
-        """Sends command to board. Returns content until stop string satisfied or timeout (s).
-        Raises ConnectionRefusalException. Returns byte array of ASCII chars response."""
+        """
+        Sends command to board. Returns content until stop string satisfied or timeout (s).
+        Raises ConnectionRefusalException. Returns byte array of ASCII chars response.
+
+        :param command: Byte array to send over serial comm link
+        :param regex: String to test response for to stop and return
+        :param timeout: Time to wait until regex string is matched before exception raised
+        :return: Full byte array response up to and including matching regex line
+        """
         # compile regex
         _re = re.compile(regex)
         # send the command
@@ -56,7 +71,9 @@ class Serial:
         return ret_val
 
     def open(self):
-        """Opens connection with board if closed."""
+        """
+        Opens connection with board if closed.
+        """
         print('Serial::open:: Opening connection...')
         if not self.__conn.is_open:
             self.__conn.open()
@@ -65,7 +82,11 @@ class Serial:
             print('Serial::open:: Connection already open.')
 
     def _verify_connection(self, timeout=7):
-        """Verifies connection."""
+        """
+        Verifies connection.
+
+        :param timeout: Time allowed before retry or exception raise
+        """
         if self.__conn_tries > self.__max_tries:
             # reset connection tries
             self.__conn_tries = 1
@@ -85,6 +106,7 @@ class Serial:
                 line = self.__conn.readline()
             # reset connection tries
             self.__conn_tries = 1
+            signal.alarm(0)
             print('Serial::_verify_connection:: Connection succeeded.')
         except TimeoutException:
             self.__conn_tries += 1
@@ -94,7 +116,9 @@ class Serial:
             self._verify_connection(timeout)
 
     def close(self):
-        """Close connection."""
+        """
+        Close connection.
+        """
         print('Serial::close:: Closing connection with', self.__device_file)
         self.__conn.close()
 
