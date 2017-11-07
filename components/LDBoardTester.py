@@ -1,47 +1,120 @@
-from components.Exceptions import OperationsOutOfOrderException
+from components.Exceptions import OperationsOutOfOrderException, TimeoutException
 from components.Serial import Serial
 from components.ModBus import ModBus
 import re
 import datetime
 from struct import pack, unpack
 from time import sleep
+import threading
+import signal
+
+# used as shared variable between threads
+thread_read_index = -1
+
+
+def _timeout(signum, frame):
+    raise TimeoutException('Timeout.')
+
+
+class ExecuteModBusThread(threading.Thread):
+    def __init__(self, slave, start, num_ports):
+        threading.Thread.__init__(self)
+        print('ExecuteModBusThread:: Creating thread.')
+        self.__serial_modbus = ModBus("serial", device_file='/dev/ttyUSB0', timeout=0)
+        self.__slave = slave
+        self.__start = start
+        self.__num_ports = num_ports
+
+    def __del__(self):
+        self.__serial_modbus.close()
+
+    def run(self):
+        global thread_read_index
+        # wait for listener
+        while thread_read_index < 0:
+            pass
+        while thread_read_index < self.__num_ports:
+            # write at 10hz
+            sleep(0.1)
+            # TODO switch Mux to thread_read_index
+            # send command
+            self.__serial_modbus.read_input_registers(self.__start, unit=self.__slave)
 
 
 class LDBoardTester:
     __serial = None
-    __serial_modbus = None
     __date_set = None
 
     def __init__(self):
         self.__serial = Serial('/dev/ttyUSB1')
-        self.__serial_modbus = ModBus("serial", device_file='/dev/ttyUSB0')
 
     def __enter__(self):
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         self.__serial.close()
-        self.__serial_modbus.close()
 
-    def test_modbus(self):
+    def test_modbus(self, num_ports=3):
         """
         Test the RS485 modbus connection
         :return: Boolean success
         """
         print('LDBoardTest::test_modbus:: Testing modbus register read.')
-        # create ModBus request
+        # forming ModBus request
         slave, function, start, num = 0, 4, 30003, 1
+        global thread_read_index
+        thread_read_index = -1
+        # create thread
+        mb_write = ExecuteModBusThread(slave, start, num_ports)
+        # begin read sequence
+        # create ModBus request
         request = pack('>bbhh', slave, function, start, num).hex()
         req_string = [request[n:n + 2] for n in range(len(request))[::2]]
-        # format for LD bootloader `mdobustest` output (all ports 1,2,3)
-        regex = [''.join(["{{p{}:{}}}".format(i, v) for v in req_hex]) for i in range(1,4)]
-        # TODO read response async and return
-        # send command
-        self.__serial_modbus.read_input_registers(start, unit=slave)
+        # format for LD bootloader `modbustest` output (all ports 1,2,3)
+        regex = [''.join(["{{p{}:{}}}".format(i, v) for v in req_string]) for i in range(1, 4)]
+        # Initialize readline timeout
+        signal.signal(signal.SIGALRM, _timeout)
+        # send listening commmand
+        self.__serial.send_command(b'modbustest\r\n')
+        # start
+        mb_write.start()
+        # start thread by setting index to 0
+        thread_read_index = 0
+        # start timer for 5 seconds
+        signal.alarm(5)
+        try:
+            while thread_read_index < num_ports:
+                # read comm line
+                response = self.__serial.read_line()
+                # cancel timeout
+                signal.alarm(0)
+                # TODO if with Mux, regex[thread_read_index]
+                # compare against regex created above
+                modbus_match = re.search(regex[0], str(response))
+                if modbus_match:
+                    print("LDBoardTest::test_modbus:: Port #", (thread_read_index + 1), "test successful.")
+                    thread_read_index += 1
+                # checking if `ok\r\n` returned
+                ok_match = re.search(r'ok\\r\\n', str(response))
+                if ok_match:
+                    # send listening commmand again
+                    self.__serial.send_command(b'modbustest\r\n')
+            # cancel timer
+            signal.alarm(0)
+        except TimeoutException:
+            print('LDBoardTest::test_modbus:: Timeout. Test failed.')
+            thread_read_index = num_ports + 1
+        # wait
+        try:
+            mb_write.join()
+        except Exception as e:
+            print('Caught:', e)
+        # success iff equal
+        return thread_read_index == num_ports
 
     def test_startup_sequence(self):
         """
-        Test internal UART status from board reset.
+        Test internal UART, MRAM status from board reset.
         """
         print('LDBoardTester::test_startup_sequence:: Testing startup sequence.')
         print('LDBoardTester::test_startup_sequence:: Sending `reset` command.')

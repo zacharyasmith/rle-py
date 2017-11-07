@@ -13,7 +13,7 @@ class ModBus:
     __tcp_client = None
     __is_serial = None
 
-    def __init__(self, method, device_file="", host=""):
+    def __init__(self, method, device_file="", host="", timeout=5):
         """
         Initializes modbus communication
 
@@ -25,18 +25,20 @@ class ModBus:
         if method == "serial":
             self.__is_serial = True
             self.__device_file = device_file
-            self.__serial_client = ModbusSerialClient(method="rtu", port=device_file, baudrate=9600, timeout=0)
+            self.__serial_client = ModbusSerialClient(method="rtu", port=device_file, baudrate=9600, timeout=timeout)
             connection = self.__serial_client.connect()
         if method == "tcp":
             self.__is_serial = False
             self.__tcp_client = ModbusTcpClient(host=host)
             connection = self.__tcp_client.connect()
-        print("ModBus::__init__:: Connection status:", connection)
+        print("ModBus:: Connection status with",
+              self.__device_file if self.__is_serial else self.__tcp_client, ':', connection)
 
     def close(self):
+        print('ModBus::close:: Closing connection with', self.__device_file if self.__is_serial else self.__tcp_client)
         if self.__is_serial:
             self.__serial_client.close()
-            print('ModBus::close:: Closing connection with', self.__device_file)
+        # TODO else is tcp
 
     def read_input_registers(self, address, count=1, unit=0x02):
         """

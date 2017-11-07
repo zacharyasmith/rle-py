@@ -29,6 +29,16 @@ class Serial:
         self.__conn = serial.Serial(self.__device_file)
         self._verify_connection()
 
+    def read_line(self):
+        """
+        Read line and return char array
+        :return: Byte string of chars
+        """
+        ret_val = b''
+        while ret_val[-1:] != b'\n' or ret_val[-1:] is None:
+            ret_val += self.__conn.read()
+        return ret_val
+
     def send_command(self, command):
         """
         Sends command to the board.
