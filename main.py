@@ -1,16 +1,8 @@
-from components.Exceptions import ConnectionRefusalException
-from components.LDBoardTester import LDBoardTester
-from time import sleep
+from components.LD5200Tester import LD5200Tester
 
-try:
-    with LDBoardTester() as ld:
-        ld.test_datetime_set()
-        ld.test_startup_sequence()
-        ld.test_voltage()
-        ld.test_modbus()
-        print('Sleeping for 3 seconds...')
-        sleep(3)
-        ld.test_datetime_read()
-except ConnectionRefusalException:
-    print("Connection refused.")
-    exit(1)
+import logging
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+
+board1 = LD5200Tester()
+board1.test()
+print(board1.results())

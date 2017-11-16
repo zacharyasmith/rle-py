@@ -7,6 +7,9 @@ from struct import pack, unpack
 from time import sleep
 import threading
 import signal
+import logging
+
+logger = logging.getLogger()
 
 # used as shared variable between threads
 thread_read_index = -1
@@ -19,7 +22,7 @@ def _timeout(signum, frame):
 class ExecuteModBusThread(threading.Thread):
     def __init__(self, slave, start, num_ports):
         threading.Thread.__init__(self)
-        print('ExecuteModBusThread:: Creating thread.')
+        logger.debug('ExecuteModBusThread:: Creating thread.')
         self.__serial_modbus = ModBus("serial", device_file='/dev/ttyUSB0', timeout=0)
         self.__slave = slave
         self.__start = start
@@ -59,7 +62,7 @@ class LDBoardTester:
         Test the RS485 modbus connection
         :return: Boolean success
         """
-        print('LDBoardTest::test_modbus:: Testing modbus register read.')
+        logger.info('LDBoardTest::test_modbus:: Testing modbus register read.')
         # forming ModBus request
         slave, function, start, num = 0, 4, 30003, 1
         global thread_read_index
@@ -92,7 +95,7 @@ class LDBoardTester:
                 # compare against regex created above
                 modbus_match = re.search(regex[0], str(response))
                 if modbus_match:
-                    print("LDBoardTest::test_modbus:: Port #", (thread_read_index + 1), "test successful.")
+                    logger.info("LDBoardTest::test_modbus:: Port #{} test successful.".format(thread_read_index + 1))
                     thread_read_index += 1
                 # checking if `ok\r\n` returned
                 ok_match = re.search(r'ok\\r\\n', str(response))
@@ -102,13 +105,13 @@ class LDBoardTester:
             # cancel timer
             signal.alarm(0)
         except TimeoutException:
-            print('LDBoardTest::test_modbus:: Timeout. Test failed.')
+            logger.warning('LDBoardTest::test_modbus:: Timeout. Test failed.')
             thread_read_index = num_ports + 1
         # wait
         try:
             mb_write.join()
         except Exception as e:
-            print('Caught:', e)
+            logger.debug('Caught:', e)
         # success iff equal
         return thread_read_index == num_ports
 
@@ -116,45 +119,45 @@ class LDBoardTester:
         """
         Test internal UART, MRAM status from board reset.
         """
-        print('LDBoardTester::test_startup_sequence:: Testing startup sequence.')
-        print('LDBoardTester::test_startup_sequence:: Sending `reset` command.')
+        logger.info('LDBoardTester::test_startup_sequence:: Testing startup sequence.')
+        logger.info('LDBoardTester::test_startup_sequence:: Sending `reset` command.')
         response = self.__serial.read_stop(b'reset\r\n', r'User prgm is not valid', timeout=15)
         match_mram = re.search(r'(?:Mram Test: )(\d+)(?://)(\d+)', str(response))
         if not match_mram:
-            print('LDBoardTester::test_startup_sequence:: Nonconforming `mram` response.')
+            logger.info('LDBoardTester::test_startup_sequence:: Nonconforming `mram` response.')
             return False
         else:
             actual, max = match_mram.group(1), match_mram.group(2)
-            print('LDBoardTester::test_startup_sequence:: mram {}/{}.'.format(actual, max))
+            logger.info('LDBoardTester::test_startup_sequence:: mram {}/{}.'.format(actual, max))
             if not actual == max:
-                print('LDBoardTester::test_startup_sequence:: mram failed.')
+                logger.info('LDBoardTester::test_startup_sequence:: mram failed.')
                 return False
         match_uart1 = re.search(r'(?:Testing duart1: \d+{lc:0} passed)', str(response))
         match_uart2 = re.search(r'(?:Testing duart2: \d+{lc:0} passed)', str(response))
         if not match_uart1:
-            print('LDBoardTester::test_startup_sequence:: UART1 failed validation.')
+            logger.info('LDBoardTester::test_startup_sequence:: UART1 failed validation.')
             return False
         if not match_uart2:
-            print('LDBoardTester::test_startup_sequence:: UART2 failed validation.')
+            logger.info('LDBoardTester::test_startup_sequence:: UART2 failed validation.')
             return False
-        print('LDBoardTester::test_startup_sequence:: UART 1 & 2 passed.')
+        logger.info('LDBoardTester::test_startup_sequence:: UART 1 & 2 passed.')
         return True
 
     def test_voltage(self):
         """
         Test internal voltage is within allowed voltage range.
         """
-        print('LDBoardTester::test_voltage:: Testing 15v supply.')
+        logger.info('LDBoardTester::test_voltage:: Testing 15v supply.')
         response = self.__serial.read_stop(b'15v\r\n', regex=r'15V Supply:')
         # 15V Supply: 15.1V\r\n
         match = re.search(r'(?:15V Supply: )(\d+(?:\.\d+)?)', str(response))
         if match:
             voltage = float(match.group(1))
-            print('LDBoardTester::test_voltage:: Voltage is', voltage)
+            logger.info('LDBoardTester::test_voltage:: Voltage is {} V'.format(voltage))
             if abs(15 - voltage) < 0.5:
-                print('LDBoardTester::test_voltage:: Test passed. Within 500 mV.')
+                logger.info('LDBoardTester::test_voltage:: Test passed. Within 500 mV.')
                 return True
-        print('LDBoardTester::test_voltage:: Test failed. Not within 500 mV.')
+        logger.info('LDBoardTester::test_voltage:: Test failed. Not within 500 mV.')
         return False
 
     def test_datetime_set(self):
@@ -170,7 +173,7 @@ class LDBoardTester:
         time = b'time '
         time += bytearray(self.__date_set.strftime("%X"), 'utf8')
         time += b'\r\n'
-        print("LDBoardTester::test_datetime_set:: Testing datetime setting.")
+        logger.info("LDBoardTester::test_datetime_set:: Testing datetime setting.")
         # TODO sends first three characters if enacted imm. after test startup
         self.__serial.read_stop(date, regex=r'ok')
         self.__serial.read_stop(time, regex=r'ok')
@@ -184,31 +187,31 @@ class LDBoardTester:
         # Response should be 01/01/17 12:00:00
         if not self.__date_set:
             raise OperationsOutOfOrderException
-        print("LDBoardTester::test_datetime_read:: Testing datetime reading.")
+        logger.info("LDBoardTester::test_datetime_read:: Testing datetime reading.")
         now = datetime.datetime.now()
         result = self.__serial.read_stop(b'time\r\n', regex=self.__date_set.strftime("%x"))
         # regex: 01/01/17 12:00:00
         match = re.search(r'(\d{2}/\d{2}/\d{2})\s+(\d{2}:\d{2}:\d{2})', str(result))
         if match:
             time, date = match.group(1), match.group(2)
-            print("LDBoardTester::test_datetime_read:: Read datetime as {} {}".format(date, time))
-            print("LDBoardTester::test_datetime_read:: Current datetime is {}".format(datetime.datetime.now().
-                                                                                      strftime("%X %x")))
+            logger.info("LDBoardTester::test_datetime_read:: Read datetime as {} {}".format(date, time))
+            logger.info("LDBoardTester::test_datetime_read:: Current datetime is {}".format(datetime.datetime
+                                                                                            .now().strftime("%X %x")))
             # parse datetime
             dt = datetime.datetime.strptime("{} {}".format(date, time), "%X %x")
             elapsed = dt - now
-            print("LDBoardTester::test_datetime_read:: Time delta is", abs(elapsed.total_seconds()), 'sec')
+            logger.info("LDBoardTester::test_datetime_read:: Time delta is {} sec".format(abs(elapsed.total_seconds())))
             # seconds allowed to be off by
             allowance = 5
             if abs(elapsed.total_seconds()) >= allowance:
-                print("LDBoardTester::test_datetime_read:: Failure. Time difference is greater than {} seconds."
-                      .format(allowance))
+                logger.info("LDBoardTester::test_datetime_read:: Failure. Time difference is greater than "
+                            "{} seconds.".format(allowance))
                 return False
             # else
-            print("LDBoardTester::test_datetime_read:: Passed. Delta <= {} sec".format(allowance))
+            logger.info("LDBoardTester::test_datetime_read:: Passed. Delta <= {} sec".format(allowance))
             return True
         else:
-            print("LDBoardTester::test_datetime_read:: Expecting (\d{2}/\d{2}/\d{2})\s+(\d{2}:\d{2}:\d{2}) got ",
-                  str(result))
+            logger.info("LDBoardTester::test_datetime_read:: Expecting (\d{2}/\d{2}/\d{2})\s+(\d{2}:\d{2}:\d{2}) got"
+                        " {}".format(str(result)))
             return False
 

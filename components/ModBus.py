@@ -1,9 +1,8 @@
-import pymodbus
-import serial
-from pymodbus.pdu import ModbusRequest
 from pymodbus.client.sync import ModbusSerialClient
 from pymodbus.client.sync import ModbusTcpClient
-from pymodbus.transaction import ModbusRtuFramer
+import logging
+
+logger = logging.getLogger()
 
 
 class ModBus:
@@ -31,11 +30,12 @@ class ModBus:
             self.__is_serial = False
             self.__tcp_client = ModbusTcpClient(host=host)
             connection = self.__tcp_client.connect()
-        print("ModBus:: Connection status with",
-              self.__device_file if self.__is_serial else self.__tcp_client, ':', connection)
+        logger.info("ModBus:: Connection status with {}".format(
+            self.__device_file if self.__is_serial else self.__tcp_client, ':', connection))
 
     def close(self):
-        print('ModBus::close:: Closing connection with', self.__device_file if self.__is_serial else self.__tcp_client)
+        logger.info('ModBus::close:: Closing connection with {}'.format(
+            self.__device_file if self.__is_serial else self.__tcp_client))
         if self.__is_serial:
             self.__serial_client.close()
         # TODO else is tcp
