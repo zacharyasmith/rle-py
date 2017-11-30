@@ -1,4 +1,5 @@
 import logging
+from collections import OrderedDict
 
 logger = logging.getLogger()
 
@@ -6,7 +7,7 @@ logger = logging.getLogger()
 class LDBoard:
     def __init__(self):
         self.passing = True
-        self.test_status = dict()
+        self.test_status = OrderedDict()
 
     def results(self):
         """

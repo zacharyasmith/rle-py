@@ -1,13 +1,16 @@
-from components.Exceptions import OperationsOutOfOrderException, TimeoutException
-from components.Serial import Serial
-from components.ModBus import ModBus
-import re
 import datetime
-from struct import pack, unpack
-from time import sleep
-import threading
-import signal
 import logging
+import re
+import signal
+import subprocess
+import threading
+from struct import pack
+from time import sleep
+import io
+
+from components.Exceptions import OperationsOutOfOrderException, TimeoutException
+from components.ModBus import ModBus
+from components.Serial import Serial
 
 logger = logging.getLogger()
 
@@ -57,6 +60,45 @@ class LDBoardTester:
     def __exit__(self, exc_type, exc_val, exc_tb):
         self.__serial.close()
 
+    def configure_ip_address(self, ip_address):
+        """
+        Configures IP address by writing command to bootloader
+        :param ip_address: The IP address to set
+        :return: Boolean success
+        """
+        logger.info('LDBoardTest::configure_ip_address:: Configuring board\'s IP address as {}'.format(ip_address))
+        self.__serial.send_command(b'ip ' + ip_address.encode('ascii') + b'\n')
+        result = self.__serial.read_stop(b'netcfg\n', r'ip: {}'.format(ip_address))
+        if not result:
+            logger.error('LDBoardTest::configure_ip_address:: Configuration failed.')
+            return False
+        return True
+
+    def test_ethernet(self, ip_address='10.0.0.188', configure_ip_address=False):
+        """
+        Test the Ethernet connection with a ping.
+        :param ip_address: IP address to ping, verifying Ethernet HW
+        :param configure_ip_address: If True, will configure board's IP address to match
+        :return: Boolean success
+        """
+        logger.info('LDBoardTest::test_ethernet:: Executing Ethernet hardware test.')
+        # update ip address if requested
+        if configure_ip_address:
+            if not self.configure_ip_address(ip_address):
+                return False
+        # execute ping command
+        p = subprocess.Popen(['ping', '-c', '4', '-I', 'eth0', ip_address], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        stdout, stderr = p.communicate()
+        # verify 0% packet loss
+        match = re.search(r'(\d+)% packet loss', str(stdout))
+        if match:
+            logger.info('LDBoardTest::test_ethernet:: Ping had {}% packet loss'.format(match.group(1)))
+            if match.group(1) == '0':
+                return True
+        # if no match or error in call, fail
+        logger.warning('LDBoardTest::test_ethernet:: Packets lost. Test failed.')
+        return False
+
     def test_modbus(self, num_ports=3):
         """
         Test the RS485 modbus connection
@@ -77,7 +119,7 @@ class LDBoardTester:
         regex = [''.join(["{{p{}:{}}}".format(i, v) for v in req_string]) for i in range(1, 4)]
         # Initialize readline timeout
         signal.signal(signal.SIGALRM, _timeout)
-        # send listening commmand
+        # send listening command
         self.__serial.send_command(b'modbustest\r\n')
         # start
         mb_write.start()

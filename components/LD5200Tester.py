@@ -18,11 +18,13 @@ class LD5200Tester(LDBoard):
         """
         try:
             with LDBoardTester() as ld:
-                self.process_test_result('rs232_connection', True)
+                # rs232_connection implied by success with __enter__
+                self.process_test_result('rs232_connection', result=True)
                 self.process_test_result('datetime_set', ld.test_datetime_set())
                 self.process_test_result('startup_sequence', ld.test_startup_sequence())
                 self.process_test_result('ps_voltage', ld.test_voltage())
                 self.process_test_result('rs485_modbus', ld.test_modbus())
+                self.process_test_result('ethernet_ping', ld.test_ethernet('10.0.0.188', configure_ip_address=True))
                 logger.info('Sleeping for 3 seconds...')
                 sleep(3)
                 self.process_test_result('datetime_read', ld.test_datetime_read())

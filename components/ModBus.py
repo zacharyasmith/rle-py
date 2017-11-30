@@ -1,6 +1,19 @@
 from pymodbus.client.sync import ModbusSerialClient
 from pymodbus.client.sync import ModbusTcpClient
 import logging
+import socket
+import fcntl
+import struct
+
+
+def get_ip_address(ifname):
+    s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    return socket.inet_ntoa(fcntl.ioctl(
+        s.fileno(),
+        0x8915,  # SIOCGIFADDR
+        struct.pack('256s', bytes(ifname[:15], 'utf-8'))
+    )[20:24])
+
 
 logger = logging.getLogger()
 
@@ -28,7 +41,9 @@ class ModBus:
             connection = self.__serial_client.connect()
         if method == "tcp":
             self.__is_serial = False
-            self.__tcp_client = ModbusTcpClient(host=host)
+            print(get_ip_address('eth0'), '169.254.161.219')
+            self.__tcp_client = ModbusTcpClient(host=host, source_address=(get_ip_address('eth0'), 0))
+            logger.info(self.__tcp_client.__str__())
             connection = self.__tcp_client.connect()
         logger.info("ModBus:: Connection status with {}".format(
             self.__device_file if self.__is_serial else self.__tcp_client, ':', connection))
@@ -50,6 +65,7 @@ class ModBus:
         :return: Returns object(s).
         """
         if self.__is_serial:
-            ret_val = self.__serial_client.read_input_registers(address, count, unit=unit)
-            # ret_val = self.__serial_client.read_holding_registers(address, count, unit=unit)
-            return ret_val
+            return self.__serial_client.read_input_registers(address, count, unit=unit)
+        else:
+            return self.__tcp_client.read_input_registers(address, count, unit=unit)
+
