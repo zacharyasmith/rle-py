@@ -23,7 +23,7 @@ _LOGGER = logging.getLogger()
 _THREAD_READ_INDEX = -1
 
 
-def timeout():
+def timeout_handler():
     """
     Used in alarm contexts.
     """
@@ -174,7 +174,7 @@ class LDBoardTester(object):
         # format for LD bootloader `modbustest` output (all ports 1,2,3)
         regex = [''.join(["{{p{}:{}}}".format(i, v) for v in req_string]) for i in range(1, 4)]
         # Initialize readline timeout
-        signal.signal(signal.SIGALRM, timeout)
+        signal.signal(signal.SIGALRM, timeout_handler)
         # send listening command
         self.__serial.send_command(b'modbustest\r\n')
         # start

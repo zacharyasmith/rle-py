@@ -9,9 +9,15 @@ import re
 import logging
 import serial
 from components.Exceptions import TimeoutException, ConnectionRefusalException
-from components.LDBoardTester import timeout as _timeout
 
 _LOGGER = logging.getLogger()
+
+
+def timeout_handler():
+    """
+    Used in alarm contexts.
+    """
+    raise TimeoutException('Timeout.')
 
 
 class Serial(object):
@@ -81,7 +87,7 @@ class Serial(object):
         # return variable
         ret_val = b''
         # Initialize timeout
-        signal.signal(signal.SIGALRM, _timeout)
+        signal.signal(signal.SIGALRM, timeout_handler)
         # start timeout
         signal.alarm(timeout)
         found = False
@@ -125,7 +131,7 @@ class Serial(object):
                      .format(self.__device_file))
         line = ''
         # Initialize timeout
-        signal.signal(signal.SIGALRM, _timeout)
+        signal.signal(signal.SIGALRM, timeout_handler)
         # Start timeout
         signal.alarm(timeout)
         # init help function
