@@ -1,30 +1,46 @@
+"""
+components/LDBoard.py
+
+Author:
+    Zachary Smith
+"""
 import logging
 from collections import OrderedDict
 
-logger = logging.getLogger()
+_LOGGER = logging.getLogger()
 
 
-class LDBoard:
+class LDBoard(object):
+    """
+    LDBoard class for representing a Lead Detection board by RLE Technologies.
+    """
     def __init__(self):
+        """
+        Constructor.
+        """
         self.passing = True
         self.test_status = OrderedDict()
 
     def results(self):
         """
         Processes test status dictionary in its current state.
-        :return: multiline string of test results
+
+        Returns:
+            multiline string of test results
         """
         ret_val = 'Passing: {}\n'.format(self.passing)
-        for n in self.test_status.keys():
-            ret_val += '\t{}: {}\n'.format(n, 'passed' if self.test_status[n] else 'failed')
+        for key in self.test_status.keys():
+            ret_val += '\t{}: {}\n'.format(key, 'passed' if self.test_status[key] else 'failed')
         return ret_val
 
     def process_test_result(self, name, result):
         """
         Processes result by updating status dictionary
-        :param name: Name of the test
-        :param result: Boolean result
+
+        Args:
+            name: Name of the test
+            result: Boolean result
         """
         self.test_status[name] = result
         self.passing = self.passing if result else False
-        logger.info('Test {} resulted: {}'.format(name, 'passed' if result else 'failed'))
+        _LOGGER.info('Test {} resulted: {}'.format(name, 'passed' if result else 'failed'))

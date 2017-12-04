@@ -1,24 +1,41 @@
-from pymodbus.client.sync import ModbusSerialClient
-from pymodbus.client.sync import ModbusTcpClient
+"""
+components/ModBus.py
+
+Author:
+    Zachary Smith
+"""
 import logging
 import socket
 import fcntl
 import struct
+from pymodbus.client.sync import ModbusSerialClient
+from pymodbus.client.sync import ModbusTcpClient
 
 
 def get_ip_address(ifname):
-    s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    """
+    Function to current device IP address based on interface name
+    Args:
+        ifname: string interface. e.g. eth0, wlan, etc
+
+    Returns:
+        string IP address
+    """
+    socket_instance = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     return socket.inet_ntoa(fcntl.ioctl(
-        s.fileno(),
+        socket_instance.fileno(),
         0x8915,  # SIOCGIFADDR
         struct.pack('256s', bytes(ifname[:15], 'utf-8'))
     )[20:24])
 
 
-logger = logging.getLogger()
+_LOGGER = logging.getLogger()
 
 
-class ModBus:
+class ModBus(object):
+    """
+    Class ModBus has methods for sending and receiving ModBus commands over serial or TCP
+    """
 
     __serial_client = None
     __device_file = None
@@ -29,27 +46,34 @@ class ModBus:
         """
         Initializes modbus communication
 
-        :param method: serial|tcp
-        :param device_file: e.g. /dev/ttyUSB0
-        :param host: e.g. 10.0.0.1
+        Args:
+            method: serial|tcp
+            device_file: e.g. /dev/ttyUSB0
+            host: e.g. 10.0.0.1
         """
         connection = False
         if method == "serial":
             self.__is_serial = True
             self.__device_file = device_file
-            self.__serial_client = ModbusSerialClient(method="rtu", port=device_file, baudrate=9600, timeout=timeout)
+            self.__serial_client = ModbusSerialClient(method="rtu", port=device_file, baudrate=9600,
+                                                      timeout=timeout)
             connection = self.__serial_client.connect()
         if method == "tcp":
             self.__is_serial = False
             print(get_ip_address('eth0'), '169.254.161.219')
-            self.__tcp_client = ModbusTcpClient(host=host, source_address=(get_ip_address('eth0'), 0))
-            logger.info(self.__tcp_client.__str__())
+            self.__tcp_client = ModbusTcpClient(host=host, source_address=(get_ip_address('eth0'),
+                                                                           0))
+            _LOGGER.info(self.__tcp_client.__str__())
             connection = self.__tcp_client.connect()
-        logger.info("ModBus:: Connection status with {}".format(
-            self.__device_file if self.__is_serial else self.__tcp_client, ':', connection))
+        _LOGGER.info("ModBus:: Connection status with {} : {}"
+                     .format(self.__device_file if self.__is_serial else self.__tcp_client,
+                             connection))
 
     def close(self):
-        logger.info('ModBus::close:: Closing connection with {}'.format(
+        """
+        Closes connection
+        """
+        _LOGGER.info('ModBus::close:: Closing connection with {}'.format(
             self.__device_file if self.__is_serial else self.__tcp_client))
         if self.__is_serial:
             self.__serial_client.close()
@@ -59,13 +83,14 @@ class ModBus:
         """
         Reads and returns modbus register.
 
-        :param address: Starting numerical modbus register address.
-        :param count: Number of registers.
-        :param unit: Slave address.
-        :return: Returns object(s).
+        Args:
+            address: Starting numerical modbus register address.
+            count: Number of registers.
+            unit: Slave address.
+
+        Returns:
+            Returns object(s).
         """
         if self.__is_serial:
             return self.__serial_client.read_input_registers(address, count, unit=unit)
-        else:
-            return self.__tcp_client.read_input_registers(address, count, unit=unit)
-
+        return self.__tcp_client.read_input_registers(address, count, unit=unit)
