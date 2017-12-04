@@ -138,12 +138,14 @@ class LDBoardTester(object):
             if not self.configure_ip_address(ip_address):
                 return False
         # execute ping command
-        p = subprocess.Popen(['ping', '-c', '4', '-I', 'eth0', ip_address],
-                             stdout=subprocess.PIPE,
-                             stderr=subprocess.PIPE)
+        command = ['ping', '-c', '4', '-I', 'eth0', ip_address]
+        p = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         stdout, stderr = p.communicate()
         # verify 0% packet loss
         match = re.search(r'(\d+)% packet loss', str(stdout))
+        # TODO verify stderr
+        _LOGGER.debug(' '.join(command))
+        _LOGGER.debug('\n\t'.join([str(i) for i in stdout.split(b'\n')]))
         if match:
             _LOGGER.info('LDBoardTest::test_ethernet:: Ping had {}% packet loss'
                          .format(match.group(1)))
@@ -211,6 +213,7 @@ class LDBoardTester(object):
             mb_write.join()
         except Exception as e:
             _LOGGER.debug('Caught: {}'.format(e))
+        self.__serial.reset_input_buffer()
         # success iff equal
         return _THREAD_READ_INDEX == num_ports
 

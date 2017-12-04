@@ -7,6 +7,8 @@ Author:
 import signal
 import re
 import logging
+from time import sleep
+
 import serial
 from components.Exceptions import TimeoutException, ConnectionRefusalException
 
@@ -41,6 +43,14 @@ class Serial(object):
         self.__conn = serial.Serial(self.__device_file)
         self._verify_connection()
 
+    def reset_input_buffer(self):
+        """
+        Resets the buffer to empty.
+        """
+        _LOGGER.debug('Serial::reset_input_buffer:: Flushing input buffer.')
+        self.__conn.reset_input_buffer()
+        sleep(.5)
+
     def read_line(self):
         """
         Read line and return char array
@@ -64,6 +74,7 @@ class Serial(object):
         self.__conn.write(command)
         _LOGGER.debug('Serial::send_command:: Wrote: {}'.format(str(command)))
         self.__conn.reset_output_buffer()
+        sleep(.5)
 
     def read_stop(self, command, regex=r'', timeout=5):
         """
@@ -99,7 +110,7 @@ class Serial(object):
                 # set found lv
                 found = _re.search(str(line))
         finally:
-            self.__conn.reset_input_buffer()
+            self.reset_input_buffer()
             signal.alarm(0)
         return ret_val
 
