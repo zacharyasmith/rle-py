@@ -7,9 +7,13 @@ Author:
 import logging
 import argparse
 from components.LD5200Tester import LD5200Tester
-
+from view.MainWindow import MainWindow
 
 if __name__ == "__main__":
+    ui = MainWindow()
+    print("here")
+
+if __name__ == "__main__" and False:
     # argument parser
     parser = argparse.ArgumentParser(description='RLE LD Board Tester.')
     # verbosity
