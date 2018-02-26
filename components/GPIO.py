@@ -15,21 +15,19 @@ except RuntimeError:
     exit(1)
 
 
-def int_to_bin(num):
+def state_tuple(num):
     """
     Function to convert number to binary state
     Args:
         num: int
 
     Returns:
-        list of binary states from LSB to MSB
+        tuple of binary states from LSB to MSB
     """
     ret = []
-    # from lsb to msb
-    for i in range(0, 5, -1):
-        # TODO HERE FIX
-        ret.append(_gpio.HIGH if num  else _gpio.LOW)
-    return ret
+    for t in [0b100, 0b010, 0b001]:
+        ret.append(_gpio.HIGH if (num & t) > 0 else _gpio.LOW)
+    return tuple(ret)
 
 
 class GPIO(object):
@@ -40,23 +38,82 @@ class GPIO(object):
 
     # const
     BOARD = 'board'
-    EMULATOR = 'emulator'
+    SHORT_EMULATOR = 'short_emulator'
+    LENGTH_EMULATOR = 'length_emulator'
     RS485 = 'rs485'
 
     __channel_list = None
-    #
+
+    # Mapping: functions --> IO ports
+
+    # Truth table
+    # A | B | C | Function
+    # -------------------------
+    # 0   0   0   Tray 1 (LD2100)
+    # 0   0   1   Tray 2 (LD2100)
+    # 0   1   0   Tray 3 (LD2100)
+    # 0   1   1   Tray 4 (LD5200)
+    # 1   0   0   Tray 5 (LD5200)
+    # 1   0   1   Tray 6 (LD5200)
+    # 1   1   0   Unused
+    # 1   1   1   Unused
     __board_selector = {
-        'pins': [3, 5, 7],
+        #        A  B  C
+        'pins': [3, 5, 7], # 3:8
         'present_state': tuple(),
         'state': tuple()
     }
-    __emulator_selector = {
-        'pins': [11, 12, 13, 15, 16],
+
+    # Truth table
+    # A | B | C | Function
+    # -------------------------
+    # 0   0   0   Short (0ft)
+    # 0   0   1   Short (357ft)
+    # 0   1   0   Short (714ft)
+    # 0   1   1   Short (1070ft)
+    # 1   0   0   Short (1425ft)
+    # 1   0   1   Short (1785ft)
+    # 1   1   0   Open for Loop1
+    # 1   1   1   Open for Loop2
+    __short_selector = {
+        #        A   B   C
+        'pins': [11, 12, 13], # 3:8
         'present_state': tuple(),
         'state': tuple()
     }
+
+    # Truth table
+    # A | B | C | Function
+    # -------------------------
+    # 0   0   0   Length (0ft)
+    # 0   0   1   Short (357ft)
+    # 0   1   0   Short (714ft)
+    # 0   1   1   Short (1070ft)
+    # 1   0   0   Short (1425ft)
+    # 1   0   1   Short (1785ft)
+    # 1   1   0   Open for Loop1
+    # 1   1   1   Open for Loop2
+    __length_selector = {
+        #        A   B   C
+        'pins': [15, 16, 18], # 3:8
+        'present_state': tuple(),
+        'state': tuple()
+    }
+
+    # Truth table
+    # A | B | C | Function
+    # -------------------------
+    # 0   0   0   RS485 port #1
+    # 0   0   1   RS485 port #2
+    # 0   1   0   RS485 port #3
+    # 0   1   1   Unused
+    # 1   0   0   Unused
+    # 1   0   1   Unused
+    # 1   1   0   Unused
+    # 1   1   1   Unused
     __rs485_selector = {
-        'pins': [18, 22],
+        #        A   B   C
+        'pins': [19, 21, 22], # 3:8
         'present_state': tuple(),
         'state': tuple()
     }
@@ -68,25 +125,61 @@ class GPIO(object):
         _gpio.setmode(_gpio.BOARD)
         # create channel list as combo of other pin lists
         self.__channel_list = list()
-        self.__channel_list.append(self.__board_selector_pins)
-        self.__channel_list.append(self.__emulator_selector_pins)
-        self.__channel_list.append(self.__rs485_selector_pins)
+        self.__channel_list.extend(self.__board_selector['pins'])
+        self.__channel_list.extend(self.__short_selector['pins'])
+        self.__channel_list.extend(self.__length_selector['pins'])
+        self.__channel_list.extend(self.__rs485_selector['pins'])
         # set as outputs and low
         _gpio.setup(self.__channel_list, _gpio.OUT)
+        _gpio.output(self.__channel_list, _gpio.LOW)
+
+    def __del__(self):
+        _gpio.cleanup()
 
     def stage(self, what, state):
         """
         Function to current device IP address based on interface name
         Args:
-            what: Select GPIO.(BOARD | EMULATOR | RS485)
-            state: int defining binary state of the selector `what`
+            what: Select GPIO.(BOARD | SHORT_EMULATOR | LENGTH_EMULATOR | RS485)
+            state: int defining binary state of the selector `what` (Check truth tables)
         """
-        gpio_state = int_to_bin(state)
+        gpio_state = state_tuple(state)
         if what == self.BOARD:
-            self.__board_selector['state'] = tuple(gpio_state[:3])
-        elif what == self.EMULATOR:
-            self.__emulator_selector['state'] = tuple(gpio_state[:4])
+            self.__board_selector['state'] = gpio_state
+        elif what == self.SHORT_EMULATOR:
+            self.__short_selector['state'] = gpio_state
+        elif what == self.LENGTH_EMULATOR:
+            self.__length_selector['state'] = gpio_state
         elif what == self.RS485:
-            self.__rs485_selector['state'] = tuple(gpio_state[:2])
+            self.__rs485_selector['state'] = gpio_state
+
+    def commit(self):
+        """
+        Commits the staged changes in one pass.
+        """
+        # compare staged state to present
+        # only update if not equal
+        if self.__board_selector['present_state'] != self.__board_selector['state']:
+            _gpio.output(self.__board_selector['pins'], self.__board_selector['state'])
+            self.__board_selector['present_state'] = self.__board_selector['state']
+
+        if self.__short_selector['present_state'] != self.__short_selector['state']:
+            _gpio.output(self.__short_selector['pins'], self.__short_selector['state'])
+            self.__short_selector['present_state'] = self.__short_selector['state']
+
+        if self.__length_selector['present_state'] != self.__length_selector['state']:
+            _gpio.output(self.__length_selector['pins'], self.__length_selector['state'])
+            self.__length_selector['present_state'] = self.__length_selector['state']
+
+        if self.__rs485_selector['present_state'] != self.__rs485_selector['state']:
+            _gpio.output(self.__rs485_selector['pins'], self.__rs485_selector['state'])
+            self.__rs485_selector['present_state'] = self.__rs485_selector['state']
 
 
+if __name__ == "__main__":
+    gpio = GPIO()
+    gpio.stage(GPIO.BOARD, 3)
+    gpio.stage(GPIO.RS485, 1)
+    gpio.stage(GPIO.LENGTH_EMULATOR, 5)
+    gpio.commit()
+    pass
