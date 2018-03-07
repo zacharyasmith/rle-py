@@ -16,6 +16,7 @@ from time import sleep
 from components.Exceptions import OperationsOutOfOrderException, TimeoutException
 from components.ModBus import ModBus
 from components.Serial import Serial
+from components.GPIO import GPIO
 
 _LOGGER = logging.getLogger()
 
@@ -34,7 +35,7 @@ class ExecuteModBusThread(threading.Thread):
     """
     Initiates and runs separate thread for sending ModBus signals over RS485
     """
-    def __init__(self, slave, start, num_ports):
+    def __init__(self, slave, start, num_ports, gpio):
         """
         Constructor
         Args:
@@ -48,6 +49,7 @@ class ExecuteModBusThread(threading.Thread):
         self.__slave = slave
         self.__start = start
         self.__num_ports = num_ports
+        self.__gpio = gpio  # type: GPIO
 
     def __del__(self):
         """
@@ -66,7 +68,10 @@ class ExecuteModBusThread(threading.Thread):
         while _THREAD_READ_INDEX < self.__num_ports:
             # write at 10hz
             sleep(0.1)
-            # TODO switch Mux to thread_read_index
+            # switch Mux to thread_read_index
+            # comment out if not using muxing
+            self.__gpio.stage(GPIO.RS485, _THREAD_READ_INDEX)
+            self.__gpio.commit()
             # send command
             self.__serial_modbus.read_input_registers(self.__start, unit=self.__slave)
 
@@ -78,10 +83,11 @@ class LDBoardTester(object):
     __serial = None
     __date_set = None
 
-    def __init__(self):
+    def __init__(self, gpio):
         """
         Constructor
         """
+        self.__gpio = gpio
         self.__serial = Serial('/dev/ttyUSB1')
 
     def __enter__(self):
@@ -168,7 +174,7 @@ class LDBoardTester(object):
         global _THREAD_READ_INDEX
         _THREAD_READ_INDEX = -1
         # create thread
-        mb_write = ExecuteModBusThread(slave, start, num_ports)
+        mb_write = ExecuteModBusThread(slave, start, num_ports, self.__gpio)
         # begin read sequence
         # create ModBus request
         request = pack('>bbhh', slave, function, start, num).hex()
@@ -191,9 +197,9 @@ class LDBoardTester(object):
                 response = self.__serial.read_line()
                 # cancel timeout
                 signal.alarm(0)
-                # TODO if with Mux, regex[thread_read_index]
+                # INFO: if with Mux, regex[thread_read_index] else regex[0]
                 # compare against regex created above
-                modbus_match = re.search(regex[0], str(response))
+                modbus_match = re.search(regex[_THREAD_READ_INDEX], str(response))
                 if modbus_match:
                     _LOGGER.info("LDBoardTest::test_modbus:: Port #{} test successful."
                                  .format(_THREAD_READ_INDEX + 1))

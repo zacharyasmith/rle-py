@@ -1,5 +1,5 @@
 """
-components/LD5200Tester.py
+components/LD2100Tester.py
 
 Author:
     Zachary Smith
@@ -14,7 +14,7 @@ from components.LDBoardTester import LDBoardTester
 _LOGGER = logging.getLogger()
 
 
-class LD5200Tester(LDBoard):
+class LD2100Tester(LDBoard):
     """
     Inherits from LDBoard. Implements test() function.
     """
@@ -31,7 +31,7 @@ class LD5200Tester(LDBoard):
         Returns:
             Boolean of board passing
         """
-        _LOGGER.info('Executing LD5200 test.\n\tSerial: {}\n\tMAC: {}'.format(self.serial_address, self.mac_address))
+        _LOGGER.info('Executing LD2100 test.\n\tSerial: {}\n\tMAC: {}'.format(self.serial_address, self.mac_address))
         try:
             with LDBoardTester(gpio) as ld_board:
                 # rs232_connection implied by success with __enter__
@@ -39,7 +39,7 @@ class LD5200Tester(LDBoard):
                 self.process_test_result('datetime_set', ld_board.test_datetime_set())
                 self.process_test_result('startup_sequence', ld_board.test_startup_sequence())
                 self.process_test_result('ps_voltage', ld_board.test_voltage())
-                self.process_test_result('rs485_modbus', ld_board.test_modbus())
+                self.process_test_result('rs485_modbus', ld_board.test_modbus(1))
                 self.process_test_result('ethernet_ping',
                                          ld_board.test_ethernet(ip_address,
                                                                 configure_ip_address=True))

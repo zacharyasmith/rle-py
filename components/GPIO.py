@@ -77,7 +77,7 @@ class GPIO(object):
     # 1   1   1   Open for Loop2
     __short_selector = {
         #        A   B   C
-        'pins': [11, 12, 13], # 3:8
+        'pins': [11, 12, 13],
         'present_state': tuple(),
         'state': tuple()
     }
@@ -95,7 +95,7 @@ class GPIO(object):
     # 1   1   1   Open for Loop2
     __length_selector = {
         #        A   B   C
-        'pins': [15, 16, 18], # 3:8
+        'pins': [15, 16, 18],
         'present_state': tuple(),
         'state': tuple()
     }
@@ -113,7 +113,7 @@ class GPIO(object):
     # 1   1   1   Unused
     __rs485_selector = {
         #        A   B   C
-        'pins': [19, 21, 22], # 3:8
+        'pins': [19, 21, 22],
         'present_state': tuple(),
         'state': tuple()
     }
@@ -143,6 +143,7 @@ class GPIO(object):
             what: Select GPIO.(BOARD | SHORT_EMULATOR | LENGTH_EMULATOR | RS485)
             state: int defining binary state of the selector `what` (Check truth tables)
         """
+        _LOGGER.info('GPIO::stage:: Staging {} into state {}.'.format(what, state))
         gpio_state = state_tuple(state)
         if what == self.BOARD:
             self.__board_selector['state'] = gpio_state
@@ -160,20 +161,25 @@ class GPIO(object):
         # compare staged state to present
         # only update if not equal
         if self.__board_selector['present_state'] != self.__board_selector['state']:
+            _LOGGER.info('GPIO::commit:: Committing changes on `{}`.'.format('board_selector'))
             _gpio.output(self.__board_selector['pins'], self.__board_selector['state'])
             self.__board_selector['present_state'] = self.__board_selector['state']
 
         if self.__short_selector['present_state'] != self.__short_selector['state']:
+            _LOGGER.info('GPIO::commit:: Committing changes on `{}`.'.format('short_selector'))
             _gpio.output(self.__short_selector['pins'], self.__short_selector['state'])
             self.__short_selector['present_state'] = self.__short_selector['state']
 
         if self.__length_selector['present_state'] != self.__length_selector['state']:
+            _LOGGER.info('GPIO::commit:: Committing changes on `{}`.'.format('length_selector'))
             _gpio.output(self.__length_selector['pins'], self.__length_selector['state'])
             self.__length_selector['present_state'] = self.__length_selector['state']
 
         if self.__rs485_selector['present_state'] != self.__rs485_selector['state']:
+            _LOGGER.info('GPIO::commit:: Committing changes on `{}`.'.format('rs485_selector'))
             _gpio.output(self.__rs485_selector['pins'], self.__rs485_selector['state'])
             self.__rs485_selector['present_state'] = self.__rs485_selector['state']
+        _LOGGER.info('GPIO::commit:: Done.')
 
 
 if __name__ == "__main__":
