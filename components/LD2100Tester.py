@@ -39,7 +39,7 @@ class LD2100Tester(LDBoard):
                 self.process_test_result('datetime_set', ld_board.test_datetime_set())
                 self.process_test_result('startup_sequence', ld_board.test_startup_sequence())
                 self.process_test_result('ps_voltage', ld_board.test_voltage())
-                self.process_test_result('rs485_modbus', ld_board.test_modbus(1))
+                self.process_test_result('rs485_modbus', ld_board.test_modbus(num_ports=1))
                 self.process_test_result('ethernet_ping',
                                          ld_board.test_ethernet(ip_address,
                                                                 configure_ip_address=True))
