@@ -148,7 +148,10 @@ class LDBoardTester(object):
         sel = 1
         tolerance = 5 / 100  # percent
         passing = True
-        for r in [1000, 2000, 3000, 4000, 5000]:    # selected with truth table values
+        # Disengaging short emulator
+        self.__gpio.stage(GPIO.SHORT_EMULATOR, 6)
+        self.__gpio.commit()
+        for r in [1500, 7100, 14600, 22100, 29600]:    # selected with truth table values
             self.__gpio.stage(GPIO.LENGTH_EMULATOR, sel)
             self.__gpio.commit()
             _LOGGER.info('LDBoardTest::test_length_detector:: Expecting {} ohms'.format(r))
@@ -175,24 +178,28 @@ class LDBoardTester(object):
         Returns:
              Boolean success
         """
-        _LOGGER.info('LDBoardTest::test_length_detector:: Executing length detector test.')
-        sel = 1
+        _LOGGER.info('LDBoardTest::short_length_detector:: Executing length detector test.')
+        sel = 0
         tolerance = 5 / 100  # percent
         passing = True
-        for r in [0, 1000, 2000, 3000, 4000, 5000]:    # selected with truth table values
+        # Disengaging length emulator
+        self.__gpio.stage(GPIO.LENGTH_EMULATOR, 6)
+        self.__gpio.commit()
+        for r in [0, 1500, 7100, 14600, 22100, 29600]:    # selected with truth table values
             self.__gpio.stage(GPIO.SHORT_EMULATOR, sel)
             self.__gpio.commit()
-            _LOGGER.info('LDBoardTest::test_length_detector:: Expecting {} ohms'.format(r))
+            _LOGGER.info('LDBoardTest::short_length_detector:: Expecting {} ohms'.format(r))
             result = self.__adc_read()
-            _LOGGER.info('LDBoardTest::test_length_detector:: Read {} ohms'.format(result[2]))
+            _LOGGER.info('LDBoardTest::short_length_detector:: Read {} ohms'.format(result[2]))
             range = r * tolerance
             if (r - range) > result[2] or (r + range) < result[2]:
-                _LOGGER.error('LDBoardTest::test_length_detector:: Leak detector not within tolerance.')
-                passing = False
+                if not (r == 0 and result[2] < 15):
+                    _LOGGER.error('LDBoardTest::short_length_detector:: Leak detector not within tolerance.')
+                    passing = False
             # next GPIO configuration
             sel += 1
         if not result:
-            _LOGGER.error('LDBoardTest::test_length_detector:: Issue getting short cable results.')
+            _LOGGER.error('LDBoardTest::short_length_detector:: Issue getting short cable results.')
             return False
         return passing
 
