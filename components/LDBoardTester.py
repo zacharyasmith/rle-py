@@ -149,7 +149,6 @@ class LDBoardTester(object):
         stdout, stderr = p.communicate()
         # verify 0% packet loss
         match = re.search(r'(\d+)% packet loss', str(stdout))
-        # TODO verify stderr
         _LOGGER.debug(' '.join(command))
         _LOGGER.debug('\n\t'.join([str(i) for i in stdout.split(b'\n')]))
         if match:
@@ -160,6 +159,93 @@ class LDBoardTester(object):
         # if no match or error in call, fail
         _LOGGER.warning('LDBoardTest::test_ethernet:: Packets lost. Test failed.')
         return False
+
+    def __adc_read(self):
+        """
+        Internal function. Execute adc1 command and read back
+
+        Returns:
+            Tuple (leg1, leg2, leak) or false
+        """
+        _LOGGER.debug('LDBoardTest::__adc_read:: Reading boards ADC.')
+        response = self.__serial.read_stop(b'adc1\n', 'ok', timeout=10)
+        response = str(response)
+        i = response.find('external cable')
+        if i == -1:
+            return False
+        response = response[i:len(response)]
+        match_leg1 = re.search(r'(?:leg1 resistance \(ohms\): )(\d+)', response)
+        if not match_leg1:
+            return False
+        leg1 = match_leg1.group(1)
+        match_leg2 = re.search(r'(?:leg2 resistance \(ohms\): )(\d+)', response)
+        if not match_leg2:
+            return False
+        leg2 = match_leg2.group(1)
+        match_leak = re.search(r'(?:distance \(ohms\): )(\d+)', response)
+        if not match_leak:
+            return False
+        leak = match_leak.group(1)
+        return (int(leg1), int(leg2), int(leak))
+
+    def test_length_detector(self):
+        """
+        Test utilizing length emulator.
+
+        Returns:
+             Boolean success
+        """
+        _LOGGER.info('LDBoardTest::test_length_detector:: Executing length detector test.')
+        sel = 1
+        tolerance = 5 / 100  # percent
+        passing = True
+        for r in [1000, 2000, 3000, 4000, 5000]:    # selected with truth table values
+            self.__gpio.stage(GPIO.LENGTH_EMULATOR, sel)
+            self.__gpio.commit()
+            _LOGGER.info('LDBoardTest::test_length_detector:: Expecting {} ohms'.format(r))
+            result = self.__adc_read()
+            _LOGGER.info('LDBoardTest::test_length_detector:: Read {} and {} ohms'.format(result[0], result[1]))
+            range = r * tolerance
+            if (r - range) > result[0] or (r + range) < result[0]:
+                _LOGGER.error('LDBoardTest::test_length_detector:: Loop1 detector not within tolerance.')
+                passing = False
+            if (r - range) > result[1] or (r + range) < result[1]:
+                _LOGGER.error('LDBoardTest::test_length_detector:: Loop2 detector not within tolerance.')
+                passing = False
+            # next GPIO configuration
+            sel += 1
+        if not result:
+            _LOGGER.error('LDBoardTest::test_length_detector:: Issue getting leak cable results.')
+            return False
+        return passing
+
+    def test_short_detector(self):
+        """
+        Test utilizing cable short emulator.
+
+        Returns:
+             Boolean success
+        """
+        _LOGGER.info('LDBoardTest::test_length_detector:: Executing length detector test.')
+        sel = 1
+        tolerance = 5 / 100  # percent
+        passing = True
+        for r in [0, 1000, 2000, 3000, 4000, 5000]:    # selected with truth table values
+            self.__gpio.stage(GPIO.SHORT_EMULATOR, sel)
+            self.__gpio.commit()
+            _LOGGER.info('LDBoardTest::test_length_detector:: Expecting {} ohms'.format(r))
+            result = self.__adc_read()
+            _LOGGER.info('LDBoardTest::test_length_detector:: Read {} ohms'.format(result[2]))
+            range = r * tolerance
+            if (r - range) > result[2] or (r + range) < result[2]:
+                _LOGGER.error('LDBoardTest::test_length_detector:: Leak detector not within tolerance.')
+                passing = False
+            # next GPIO configuration
+            sel += 1
+        if not result:
+            _LOGGER.error('LDBoardTest::test_length_detector:: Issue getting short cable results.')
+            return False
+        return passing
 
     def test_modbus(self, num_ports=3):
         """

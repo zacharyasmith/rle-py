@@ -5,6 +5,7 @@ Author:
     Zachary Smith
 """
 import logging
+from time import sleep
 
 _LOGGER = logging.getLogger()
 
@@ -86,11 +87,11 @@ class GPIO(object):
     # A | B | C | Function
     # -------------------------
     # 0   0   0   Length (0ft)
-    # 0   0   1   Short (357ft)
-    # 0   1   0   Short (714ft)
-    # 0   1   1   Short (1070ft)
-    # 1   0   0   Short (1425ft)
-    # 1   0   1   Short (1785ft)
+    # 0   0   1   Length (357ft)
+    # 0   1   0   Length (714ft)
+    # 0   1   1   Length (1070ft)
+    # 1   0   0   Length (1425ft)
+    # 1   0   1   Length (1785ft)
     # 1   1   0   Open for Loop1
     # 1   1   1   Open for Loop2
     __length_selector = {
@@ -179,6 +180,7 @@ class GPIO(object):
             _LOGGER.info('GPIO::commit:: Committing changes on `{}`.'.format('rs485_selector'))
             _gpio.output(self.__rs485_selector['pins'], self.__rs485_selector['state'])
             self.__rs485_selector['present_state'] = self.__rs485_selector['state']
+        sleep(50 / 1000)    # sleep for 50 ms to let digital circuits settle
         _LOGGER.info('GPIO::commit:: Done.')
 
 

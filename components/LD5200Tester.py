@@ -10,6 +10,7 @@ import logging
 from components.Exceptions import ConnectionRefusalException
 from components.LDBoard import LDBoard
 from components.LDBoardTester import LDBoardTester
+from serial.serialutil import SerialException
 
 _LOGGER = logging.getLogger()
 
@@ -36,17 +37,22 @@ class LD5200Tester(LDBoard):
             with LDBoardTester(gpio) as ld_board:
                 # rs232_connection implied by success with __enter__
                 self.process_test_result('rs232_connection', result=True)
-                self.process_test_result('datetime_set', ld_board.test_datetime_set())
-                self.process_test_result('startup_sequence', ld_board.test_startup_sequence())
-                self.process_test_result('ps_voltage', ld_board.test_voltage())
-                self.process_test_result('rs485_modbus', ld_board.test_modbus())
-                self.process_test_result('ethernet_ping',
-                                         ld_board.test_ethernet(ip_address,
-                                                                configure_ip_address=True))
-                _LOGGER.info('Sleeping for 3 seconds...')
-                sleep(3)
-                self.process_test_result('datetime_read', ld_board.test_datetime_read())
+                # self.process_test_result('datetime_set', ld_board.test_datetime_set())
+                # self.process_test_result('startup_sequence', ld_board.test_startup_sequence())
+                # self.process_test_result('ps_voltage', ld_board.test_voltage())
+                self.process_test_result('length_detection', ld_board.test_length_detector())
+                self.process_test_result('short_detection', ld_board.test_short_detector())
+                # self.process_test_result('rs485_modbus', ld_board.test_modbus())
+                # self.process_test_result('ethernet_ping',
+                #                          ld_board.test_ethernet(ip_address, configure_ip_address=True))
+                # _LOGGER.info('Sleeping for 3 seconds...')
+                # sleep(3)
+                # self.process_test_result('datetime_read', ld_board.test_datetime_read())
         except ConnectionRefusalException:
-            _LOGGER.info("Connection refused.")
+            _LOGGER.error("RS232 connection refused.")
+            self.process_test_result('rs232_connection', False)
+        except SerialException as e:
+            _LOGGER.error(e.strerror)
+            _LOGGER.error('Switch USB ports.')
             self.process_test_result('rs232_connection', False)
         return self.passing
