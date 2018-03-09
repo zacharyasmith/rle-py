@@ -37,7 +37,7 @@ class LDBoardTester(object):
         Constructor
         """
         self.__gpio = gpio
-        self.__serial = Serial('/dev/ttyUSB1')
+        self.__serial = Serial('/dev/ttyUSB0')
 
     def __enter__(self):
         """
@@ -178,7 +178,7 @@ class LDBoardTester(object):
         Returns:
              Boolean success
         """
-        _LOGGER.info('LDBoardTest::short_length_detector:: Executing length detector test.')
+        _LOGGER.info('LDBoardTest::short_length_detector:: Executing short detector test.')
         sel = 0
         tolerance = 5 / 100  # percent
         passing = True
@@ -190,7 +190,7 @@ class LDBoardTester(object):
             self.__gpio.commit()
             _LOGGER.info('LDBoardTest::short_length_detector:: Expecting {} ohms'.format(r))
             result = self.__adc_read()
-            _LOGGER.info('LDBoardTest::short_length_detector:: Read {} ohms'.format(result[2]))
+            _LOGGER.info('LDBoardTest::short_lengh_detector:: Read {} ohms'.format(result[2]))
             range = r * tolerance
             if (r - range) > result[2] or (r + range) < result[2]:
                 if not (r == 0 and result[2] < 15):
@@ -198,6 +198,13 @@ class LDBoardTester(object):
                     passing = False
             # next GPIO configuration
             sel += 1
+        # break test
+        # TODO confirm results
+        self.__gpio.stage(GPIO.LENGTH_EMULATOR, 7)
+        self.__gpio.stage(GPIO.SHORT_EMULATOR, 6)
+        self.__gpio.commit()
+        result = self.__adc_read()
+        _LOGGER.info('LDBoardTest::short_lengh_detector:: Read {}, {}, {}'.format(result[0], result[1], result[2]))
         if not result:
             _LOGGER.error('LDBoardTest::short_length_detector:: Issue getting short cable results.')
             return False
