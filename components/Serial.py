@@ -15,7 +15,7 @@ from components.Exceptions import TimeoutException, ConnectionRefusalException
 _LOGGER = logging.getLogger()
 
 
-def timeout_handler():
+def timeout_handler(arg1, arg2):
     """
     Used in alarm contexts.
     """

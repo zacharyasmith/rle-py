@@ -9,9 +9,6 @@ import logging
 import re
 import signal
 import subprocess
-import threading
-from struct import pack
-from time import sleep
 
 from components.Exceptions import OperationsOutOfOrderException, TimeoutException
 from components.ModBus import ModBus
@@ -20,60 +17,12 @@ from components.GPIO import GPIO
 
 _LOGGER = logging.getLogger()
 
-# used as shared variable between threads
-_THREAD_READ_INDEX = -1
 
-
-def timeout_handler():
+def timeout_handler(arg1, arg2):
     """
     Used in alarm contexts.
     """
     raise TimeoutException('Timeout.')
-
-
-class ExecuteModBusThread(threading.Thread):
-    """
-    Initiates and runs separate thread for sending ModBus signals over RS485
-    """
-    def __init__(self, slave, start, num_ports, gpio):
-        """
-        Constructor
-        Args:
-            slave: binary slave index (usually 0)
-            start: binary start register
-            num_ports: binary number of ports
-        """
-        threading.Thread.__init__(self)
-        _LOGGER.debug('ExecuteModBusThread:: Creating thread.')
-        self.__serial_modbus = ModBus("serial", device_file='/dev/ttyUSB0', timeout=0)
-        self.__slave = slave
-        self.__start = start
-        self.__num_ports = num_ports
-        self.__gpio = gpio  # type: GPIO
-
-    def __del__(self):
-        """
-        Destructor.
-        """
-        self.__serial_modbus.close()
-
-    def run(self):
-        """
-        The runner command which sends commands over ModBus
-        """
-        global _THREAD_READ_INDEX
-        # wait for listener
-        while _THREAD_READ_INDEX < 0:
-            pass
-        while _THREAD_READ_INDEX < self.__num_ports:
-            # write at 10hz
-            sleep(0.1)
-            # switch Mux to thread_read_index
-            # comment out if not using muxing
-            self.__gpio.stage(GPIO.RS485, _THREAD_READ_INDEX)
-            self.__gpio.commit()
-            # send command
-            self.__serial_modbus.read_input_registers(self.__start, unit=self.__slave)
 
 
 class LDBoardTester(object):
@@ -256,58 +205,43 @@ class LDBoardTester(object):
         """
         _LOGGER.info('LDBoardTest::test_modbus:: Testing modbus register read.')
         # forming ModBus request
-        slave, function, start, num = 0, 4, 30003, 1
-        global _THREAD_READ_INDEX
-        _THREAD_READ_INDEX = -1
-        # create thread
-        mb_write = ExecuteModBusThread(slave, start, num_ports, self.__gpio)
-        # begin read sequence
-        # create ModBus request
-        request = pack('>bbhh', slave, function, start, num).hex()
-        req_string = [request[n:n + 2] for n in range(len(request))[::2]]
-        # format for LD bootloader `modbustest` output (all ports 1,2,3)
-        regex = [''.join(["{{p{}:{}}}".format(i, v) for v in req_string]) for i in range(1, 4)]
-        # Initialize readline timeout
-        signal.signal(signal.SIGALRM, timeout_handler)
+        slave, start = 1, 30003
         # send listening command
+        self.__serial.reset_input_buffer()
         self.__serial.send_command(b'modbustest\r\n')
-        # start
-        mb_write.start()
-        # start thread by setting index to 0
-        _THREAD_READ_INDEX = 0
+        serial_modbus = ModBus("serial", device_file='/dev/ttyUSB0', timeout=0)
+        serial_modbus.read_input_registers(start, unit=slave)
         # start timer for 5 seconds
         signal.alarm(5)
+        passing = [False for i in range(num_ports)]
         try:
-            while _THREAD_READ_INDEX < num_ports:
+            while passing.count(False) > 0:
                 # read comm line
                 response = self.__serial.read_line()
-                # cancel timeout
-                signal.alarm(0)
-                # INFO: if with Mux, regex[thread_read_index] else regex[0]
-                # compare against regex created above
-                modbus_match = re.search(regex[_THREAD_READ_INDEX], str(response))
+                # compare against all possible ports
+                modbus_match = re.search(r'(?:port)(\d)(?:-mb\spacket\sprocess)', str(response))
+                ok_match = re.search(r'ok', str(response))
+                port = None
                 if modbus_match:
-                    _LOGGER.info("LDBoardTest::test_modbus:: Port #{} test successful."
-                                 .format(_THREAD_READ_INDEX + 1))
-                    _THREAD_READ_INDEX += 1
-                # checking if `ok\r\n` returned
-                ok_match = re.search(r'ok\\r\\n', str(response))
-                if ok_match:
-                    # send listening commmand again
+                    port = int(modbus_match.group(1))
+                elif ok_match:
                     self.__serial.send_command(b'modbustest\r\n')
+                    serial_modbus.read_input_registers(start, unit=slave)
+                    continue
+                else:
+                    continue    # line read not useful
+                for i in range(num_ports):
+                    if i + 1 == port:   # success!
+                        _LOGGER.info("LDBoardTest::test_modbus:: Port #{} test successful.".format(i + 1))
+                        passing[i] = True
             # cancel timer
             signal.alarm(0)
         except TimeoutException:
             _LOGGER.warning('LDBoardTest::test_modbus:: Timeout. Test failed.')
-            _THREAD_READ_INDEX = num_ports + 1
-        # wait
-        try:
-            mb_write.join()
-        except Exception as e:
-            _LOGGER.debug('Caught: {}'.format(e))
+            return False
         self.__serial.reset_input_buffer()
-        # success iff equal
-        return _THREAD_READ_INDEX == num_ports
+        # implied success
+        return True
 
     def test_startup_sequence(self):
         """
