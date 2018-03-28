@@ -11,9 +11,9 @@ from PyQt5 import QtCore, QtGui, QtWidgets
 class Ui_MainWindow(object):
     def setupUi(self, MainWindow):
         MainWindow.setObjectName("MainWindow")
-        MainWindow.resize(800, 425)
-        MainWindow.setMinimumSize(QtCore.QSize(800, 425))
-        MainWindow.setMaximumSize(QtCore.QSize(800, 425))
+        MainWindow.resize(800, 415)
+        MainWindow.setMinimumSize(QtCore.QSize(800, 415))
+        MainWindow.setMaximumSize(QtCore.QSize(800, 415))
         self.centralWidget = QtWidgets.QWidget(MainWindow)
         self.centralWidget.setObjectName("centralWidget")
         self.logo_btn = QtWidgets.QLabel(self.centralWidget)
