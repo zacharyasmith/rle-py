@@ -73,7 +73,7 @@ class TheApp(QMainWindow, app.Ui_MainWindow):
         self.set_status(3, self.FAIL)
         self.objects[2]['tray'].setDisabled(False)
         self.objects[3]['tray'].setDisabled(False)
-        self.resume_btn.clicked.connect()
+        self.resume_btn.clicked.connect(run)
 
     def set_status(self, tray, status):
         self.objects[tray]['label'].setStyleSheet("background-color: {}".format(status))
