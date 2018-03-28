@@ -9,13 +9,14 @@ import argparse
 from components.LD5200Tester import LD5200Tester
 from components.LD2100Tester import LD2100Tester
 from components.GPIO import GPIO
-from view.MainWindow import MainWindow
+# from view.MainWindow import MainWindow
 
-if __name__ == "__main__" and False:
-    ui = MainWindow()
-    print("here")
+# if __name__ == "__main__" and False:
+#     ui = MainWindow()
+#     print("here")
 
-if __name__ == "__main__":
+
+def start():
     # argument parser
     parser = argparse.ArgumentParser(description='RLE LD Board Tester.')
     # verbosity
@@ -39,3 +40,6 @@ if __name__ == "__main__":
     _BOARD1 = LD5200Tester(serial='LD5200_BOARD1', mac='00:25:96:FF:FE:12:34:56')
     _BOARD1.test(gpio, ip_address='10.0.0.188')
     print(_BOARD1.results())
+
+if __name__ == "__main__":
+    start()
