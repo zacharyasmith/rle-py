@@ -219,11 +219,11 @@ class LDBoardTester(object):
         """
         _LOGGER.info('LDBoardTest::test_modbus:: Testing modbus register read.')
         # forming ModBus request
-        slave, start = 254, 9990
+        slave, start = 254, 40000+9990
         # send listening command
         self.__serial.reset_input_buffer()
         self.__serial.send_command(b'modbustest\r\n')
-        serial_modbus = ModBus("serial", device_file='/dev/rleRS485', timeout=0)
+        serial_modbus = ModBus(device_file='/dev/rleRS485', timeout=0)
         serial_modbus.read_input_registers(start, unit=slave)
         # start timer for 5 seconds
         signal.alarm(5)

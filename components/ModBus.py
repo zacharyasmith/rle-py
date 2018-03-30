@@ -9,7 +9,6 @@ import socket
 import fcntl
 import struct
 from pymodbus.client.sync import ModbusSerialClient
-from pymodbus.client.sync import ModbusTcpClient
 
 
 def get_ip_address(ifname):
@@ -42,7 +41,7 @@ class ModBus(object):
     __tcp_client = None
     __is_serial = None
 
-    def __init__(self, method, device_file="", host="", timeout=5):
+    def __init__(self, device_file="", timeout=5):
         """
         Initializes modbus communication
 
@@ -51,20 +50,11 @@ class ModBus(object):
             device_file: e.g. /dev/ttyUSB0
             host: e.g. 10.0.0.1
         """
-        connection = False
-        if method == "serial":
-            self.__is_serial = True
-            self.__device_file = device_file
-            self.__serial_client = ModbusSerialClient(method="rtu", port=device_file, baudrate=9600,
-                                                      timeout=timeout)
-            connection = self.__serial_client.connect()
-        if method == "tcp":
-            self.__is_serial = False
-            print(get_ip_address('eth0'), '169.254.161.219')
-            self.__tcp_client = ModbusTcpClient(host=host, source_address=(get_ip_address('eth0'),
-                                                                           0))
-            _LOGGER.info(self.__tcp_client.__str__())
-            connection = self.__tcp_client.connect()
+        self.__is_serial = True
+        self.__device_file = device_file
+        self.__serial_client = ModbusSerialClient(method="rtu", port=device_file, baudrate=9600,
+                                                  timeout=timeout)
+        connection = self.__serial_client.connect()
         _LOGGER.info("ModBus:: Connection status with {} : {}"
                      .format(self.__device_file if self.__is_serial else self.__tcp_client,
                              connection))
@@ -75,9 +65,7 @@ class ModBus(object):
         """
         _LOGGER.info('ModBus::close:: Closing connection with {}'.format(
             self.__device_file if self.__is_serial else self.__tcp_client))
-        if self.__is_serial:
-            self.__serial_client.close()
-        # TODO else is tcp
+        self.__serial_client.close()
 
     def read_input_registers(self, address, count=1, unit=0x02):
         """
@@ -91,6 +79,4 @@ class ModBus(object):
         Returns:
             Returns object(s).
         """
-        if self.__is_serial:
-            return self.__serial_client.read_input_registers(address, count, unit=unit)
-        return self.__tcp_client.read_input_registers(address, count, unit=unit)
+        return self.__serial_client.read_input_registers(address, count, unit=unit)
