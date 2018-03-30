@@ -1,2 +1,2 @@
-SUBSYSTEM=="tty", ATTRS{serial}=="BBRIJ5YD", ATTRS{product}=="Model_232USB9M", SYMLINK+="rleRS232"
-SUBSYSTEM=="tty", ATTRS{serial}=="BBRUBK4U", ATTRS{product}=="Model_485USBTB-2W", SYMLINK+="rleRS485"
+SUBSYSTEM=="tty", ATTRS{idVendor}=="0856", ATTRS{serial}=="BBRIJ5YD", SYMLINK+="rleRS232"
+SUBSYSTEM=="tty", ATTRS{idVendor}=="0856", ATTRS{serial}=="BBRUBK4U", SYMLINK+="rleRS485"
