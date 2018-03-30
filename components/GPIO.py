@@ -60,7 +60,7 @@ class GPIO(object):
     # 1   1   1   Unused
     __board_selector = {
         #        A  B  C
-        'pins': [3, 5, 7], # 3:8
+        'pins': [7, 11, 12],
         'present_state': tuple(),
         'state': tuple()
     }
@@ -78,7 +78,7 @@ class GPIO(object):
     # 1   1   1   Open for Loop2
     __short_selector = {
         #        A   B   C
-        'pins': [11, 12, 13],
+        'pins': [13, 15, 16],
         'present_state': tuple(),
         'state': tuple()
     }
@@ -96,7 +96,7 @@ class GPIO(object):
     # 1   1   1   Open for Loop2
     __length_selector = {
         #        A   B   C
-        'pins': [15, 16, 18],
+        'pins': [18, 19, 21],
         'present_state': tuple(),
         'state': tuple()
     }
@@ -114,7 +114,7 @@ class GPIO(object):
     # 1   1   1   Unused
     __rs485_selector = {
         #        A   B   C
-        'pins': [19, 21, 22],
+        'pins': [22, 23, 24],
         'present_state': tuple(),
         'state': tuple()
     }
