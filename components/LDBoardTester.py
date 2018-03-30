@@ -219,7 +219,7 @@ class LDBoardTester(object):
         """
         _LOGGER.info('LDBoardTest::test_modbus:: Testing modbus register read.')
         # forming ModBus request
-        slave, start = 1, 30003
+        slave, start = 254, 9990
         # send listening command
         self.__serial.reset_input_buffer()
         self.__serial.send_command(b'modbustest\r\n')
