@@ -1,2 +1,2 @@
-ACTION=="add", ATTRS{idVendor}=="0856", ATTRS{serial}=="BBRIJ5YD", SYMLINK+="rleRS232"
-ACTION=="add", ATTRS{idVendor}=="0856", ATTRS{serial}=="BBRUBK4U", SYMLINK+="rleRS485"
+ACTION=="add", ATTRS{manufacturer}=="B&B Electronics", ATTRS{serial}=="BBRIJ5YD", SYMLINK+="rleRS232"
+ACTION=="add", ATTRS{manufacturer}=="B&B Electronics", ATTRS{serial}=="BBRUBK4U", SYMLINK+="rleRS485"
