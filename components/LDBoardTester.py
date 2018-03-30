@@ -37,7 +37,7 @@ class LDBoardTester(object):
         Constructor
         """
         self.__gpio = gpio
-        self.__serial = Serial('/dev/ttyUSB1')
+        self.__serial = Serial('/dev/rleRS232')
 
     def __enter__(self):
         """
@@ -223,7 +223,7 @@ class LDBoardTester(object):
         # send listening command
         self.__serial.reset_input_buffer()
         self.__serial.send_command(b'modbustest\r\n')
-        serial_modbus = ModBus("serial", device_file='/dev/ttyUSB0', timeout=0)
+        serial_modbus = ModBus("serial", device_file='/dev/rleRS485', timeout=0)
         serial_modbus.read_input_registers(start, unit=slave)
         # start timer for 5 seconds
         signal.alarm(5)
