@@ -37,7 +37,7 @@ class LDBoardTester(object):
         Constructor
         """
         self.__gpio = gpio
-        self.__serial = Serial('/dev/ttyUSB0')
+        self.__serial = Serial('/dev/ttyUSB1')
 
     def __enter__(self):
         """
