@@ -80,3 +80,17 @@ class ModBus(object):
             Returns object(s).
         """
         return self.__serial_client.read_input_registers(address, count, unit=unit)
+
+    def read_holding_registers(self, address, count=2, unit=0x02):
+        """
+        Reads and returns modbus register.
+
+        Args:
+            address: Starting numerical modbus register address.
+            count: Number of registers.
+            unit: Slave address.
+
+        Returns:
+            Returns object(s).
+        """
+        return self.__serial_client.read_holding_registers(address, count, unit=unit)
