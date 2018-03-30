@@ -67,7 +67,7 @@ class ModBus(object):
             self.__device_file if self.__is_serial else self.__tcp_client))
         self.__serial_client.close()
 
-    def read_input_registers(self, address, count=1, unit=0x02):
+    def read_input_registers(self, address, count=2, unit=0x02):
         """
         Reads and returns modbus register.
 
