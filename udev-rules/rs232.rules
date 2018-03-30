@@ -1,2 +1,1 @@
 SUBSYSTEM=="usb-serial", ATTRS{idVendor}=="0856", ATTRS{idProduct}=="ac27", SYMLINK+="rleRS232"
-SUBSYSTEM=="usb-serial", ATTRS{idVendor}=="0856", ATTRS{idProduct}=="ac33", SYMLINK+="rleRS485"
