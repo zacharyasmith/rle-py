@@ -11,37 +11,32 @@ import Adafruit_ADS1x15
 _LOGGER = logging.getLogger()
 
 
-class ADC(object):
+def read(pin, gain=1):
     """
-    Class ADC handles communication with the I2C attached A/D converter
+    Read the ADC values.
+
+    Args:
+        pin: Pin number [0-3]
+
+    Returns:
+        Float average
     """
-
-    def __int__(self):
-        self.__adc = Adafruit_ADS1x15.ADS1015()
-        self.__gain = 1
-
-    def read(self, pin):
-        """
-        Read the ADC values.
-
-        Args:
-            pin: Pin number [0-3]
-
-        Returns:
-            Float average
-        """
-        return self.__adc.read_adc(pin, self.__gain)
+    adc = Adafruit_ADS1x15.ADS1015()
+    val = adc.read_adc(pin, gain)
+    return val
 
 
 if __name__ == "__main__":
-    signal_max = 0
-    signal_min = 4095
-    adc = ADC()
     while True:
-        read = adc.read(0)
-        if read > signal_max:
-            signal_max = read
-        elif read < signal_min:
-            signal_min = read
-        time.sleep(0.25)
-        print("Max {}, Min {}".format(signal_max, signal_min))
+        signal_max = 0
+        signal_min = 4095
+        start = time.time()
+        while time.time() - start < 0.5:
+            val = read(0, 2)
+            if val > signal_max:
+                signal_max = val
+            if val < signal_min:
+                signal_min = val
+        pp = signal_max - signal_min
+        if signal_max > 1700:
+            print("Max {}, Min {}, V {}".format(signal_max, signal_min, (pp * 3.3)/4095))
