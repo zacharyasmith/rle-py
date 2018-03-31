@@ -1,6 +1,6 @@
 import sys
 
-from PyQt5.QtWidgets import QMainWindow, QApplication
+from PyQt5.QtWidgets import QMainWindow, QApplication, QWidget, QFormLayout, QLineEdit, QLabel, QInputDialog
 from main import start
 import view.MainWindow as app
 
@@ -60,32 +60,37 @@ class TheApp(QMainWindow, app.Ui_MainWindow):
         self.objects[6]['info_btn'] = self.tray6_info_btn
         self.objects[6]['board_label'] = self.tray6_board_label
         self.objects[6]['label'] = self.tray6_label
-        # create other constants
-        self.INACTIVE = "#f2f2f2"
-        self.FAIL = "#FF5B5B"
-        self.PASSING = "#33CC33"
         for i in range(6):
             self.objects[i + 1]['debug'].setText("Awaiting start.")
             self.objects[i + 1]['progress'].setValue(0)
-            self.objects[i + 1]['cmd_btn'].clicked.connect(lambda: clicked(i + 1))
+            # self.objects[i + 1]['cmd_btn'].clicked.connect(lambda: clicked(i + 1))
+            self.objects[i + 1]['info_btn'].setDisabled(True)
             self.set_status(i + 1, self.INACTIVE)
         self.set_status(2, self.PASSING)
         self.set_status(3, self.FAIL)
-        self.objects[2]['tray'].setDisabled(False)
-        self.objects[3]['tray'].setDisabled(False)
-        self.resume_btn.clicked.connect(run)
+        self.pause_btn.setDisabled(True)
+        self.cancel_btn.setDisabled(True)
+        self.resume_btn.clicked.connect(self.start_btn_handler)
+
+    # create other constants
+    INACTIVE = "#f2f2f2"
+    FAIL = "#FF5B5B"
+    PASSING = "#33CC33"
+
+    def start_btn_handler(self):
+        self.resume_btn.setDisabled(True)
+        for i in range(6):
+            board = "Tray {}".format(i + 1)
+            mac, ok = QInputDialog.getText(self, 'MAC : {}'.format(board), "Enter MAC Address:")
+            if ok:
+                self.objects[i + 1]["mac"] = mac
+            serial, ok = QInputDialog.getText(self, 'Serial : {}'.format(board), "Enter Serial ID:")
+            if ok:
+                self.objects[i + 1]["serial"] = serial
+        self.resume_btn.setDisabled(False)
 
     def set_status(self, tray, status):
         self.objects[tray]['label'].setStyleSheet("background-color: {}".format(status))
-
-
-def clicked(tray):
-    print("CLICKED!")
-    print(tray)
-
-
-def run():
-    start()
 
 
 def main():

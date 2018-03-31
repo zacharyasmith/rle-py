@@ -14,6 +14,8 @@ try:
 except RuntimeError:
     _LOGGER.error("Critical: Library `RPi.GPIO` could not be imported. Try running as Admin.")
     exit(1)
+except ModuleNotFoundError:
+    _LOGGER.error("Functionality won't work for GPIO.")
 
 
 def state_tuple(num):

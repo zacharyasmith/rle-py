@@ -5,27 +5,7 @@ Author:
     Zachary Smith
 """
 import logging
-import socket
-import fcntl
-import struct
 from pymodbus.client.sync import ModbusSerialClient
-
-
-def get_ip_address(ifname):
-    """
-    Function to current device IP address based on interface name
-    Args:
-        ifname: string interface. e.g. eth0, wlan, etc
-
-    Returns:
-        string IP address
-    """
-    socket_instance = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-    return socket.inet_ntoa(fcntl.ioctl(
-        socket_instance.fileno(),
-        0x8915,  # SIOCGIFADDR
-        struct.pack('256s', bytes(ifname[:15], 'utf-8'))
-    )[20:24])
 
 
 _LOGGER = logging.getLogger()
