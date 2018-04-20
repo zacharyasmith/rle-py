@@ -7,9 +7,11 @@ Author:
 
 from time import sleep
 import logging
+from pymodbus.exceptions import ConnectionException
 from components.Exceptions import ConnectionRefusalException
 from components.LDBoard import LDBoard
 from components.LDBoardTester import LDBoardTester
+from serial.serialutil import SerialException
 
 _LOGGER = logging.getLogger()
 
@@ -47,6 +49,15 @@ class LD2100Tester(LDBoard):
                 sleep(3)
                 self.process_test_result('datetime_read', ld_board.test_datetime_read())
         except ConnectionRefusalException:
-            _LOGGER.info("Connection refused.")
+                _LOGGER.error("RS232 connection refused.")
+                self.process_test_result('rs232_connection', False)
+        except ConnectionException as e:
+            if e.string:
+                _LOGGER.error(e.string)
+            _LOGGER.error('USB to RS485(ModBus) adapter failed to connect.')
+        except SerialException as e:
+            if e.strerror:
+                _LOGGER.error(e.strerror)
+            _LOGGER.error('USB to RS232 adapter failed to connect.')
             self.process_test_result('rs232_connection', False)
         return self.passing
