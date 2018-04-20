@@ -20,7 +20,7 @@ class ModBus(object):
     __serial_client = None
     __device_file = None
 
-    def __init__(self, device_file="", timeout=5):
+    def __init__(self, device_file="", timeout=1):
         """
         Initializes modbus communication
 
@@ -29,8 +29,7 @@ class ModBus(object):
             timeout: seconds
         """
         self.__device_file = device_file
-        self.__serial_client = ModbusSerialClient(method="rtu", port=device_file, baudrate=9600,
-                                                  timeout=timeout)
+        self.__serial_client = ModbusSerialClient(method="rtu", port=device_file, baudrate=9600, timeout=timeout)
         connection = self.__serial_client.connect()
         _LOGGER.debug("ModBus:: Connection status with {} : {}".format(self.__device_file, connection))
 

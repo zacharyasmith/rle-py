@@ -244,6 +244,7 @@ class LDBoardTester(object):
             self.__gpio.commit()
             # three strikes and continue
             if strike == 3:
+                strike = 0
                 port += 1
                 continue
             # execute read
