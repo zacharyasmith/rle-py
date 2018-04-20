@@ -250,6 +250,7 @@ class LDBoardTester(object):
             modbus = serial_modbus.read_holding_registers(start, 1, slave)
             if not modbus:
                 strike += 1
+                continue
             # check response
             success = False
             if port == 0:
