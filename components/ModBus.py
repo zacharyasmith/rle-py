@@ -54,7 +54,7 @@ class ModBus(object):
             Returns object(s).
         """
         a = self.__serial_client.read_holding_registers(address, count, unit=unit)
-        if a:
+        if type(a) == ReadHoldingRegistersResponse:
             _LOGGER.debug('ModBus::read_holding_registers:: Response: {}'.format(a.registers))
         else:
             _LOGGER.debug('ModBus::read_holding_registers:: Failed. {}'.format(a))
