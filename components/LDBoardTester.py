@@ -232,6 +232,7 @@ class LDBoardTester(object):
             response = serial_modbus.read_holding_registers(start, 1, slave)
             if response:
                 return response.registers[0] == 1234
+            return False
         # listener
         self.__serial.reset_input_buffer()
         self.__serial.send_command(b'modbustest\r\n')
@@ -289,7 +290,7 @@ class LDBoardTester(object):
         _LOGGER.info('LDBoardTester::test_startup_sequence:: Testing startup sequence.')
         _LOGGER.info('LDBoardTester::test_startup_sequence:: Sending `reset` command.')
         response = self.__serial.read_stop(b'reset\r\n', r'User prgm is not valid', timeout=15)
-        if board == LDBoardTester.LD5200:
+        if board == LDBoardTester.LD2100:
             match_freq = re.search(r'(f\d:\s\d+hz\spass(\s\s)?){4}', str(response))
             if not match_freq:
                 _LOGGER.info('LDBoardTester::test_startup_sequence:: Frequency check failed.')
