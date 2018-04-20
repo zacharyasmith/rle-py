@@ -45,7 +45,7 @@ class LD5200Tester(LDBoard):
                 # self.process_test_result('ps_voltage', ld_board.test_voltage())
                 # self.process_test_result('length_detection', ld_board.test_length_detector())
                 # self.process_test_result('short_detection', ld_board.test_short_detector())
-                self.process_test_result('rs485_modbus', ld_board.test_modbus())
+                self.process_test_result('rs485_modbus', ld_board.test_modbus(LDBoardTester.LD5200))
                 # self.process_test_result('ethernet_ping',
                 #                          ld_board.test_ethernet(ip_address, configure_ip_address=True))
                 # _LOGGER.info('Sleeping for 3 seconds...')
