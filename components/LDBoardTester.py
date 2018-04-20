@@ -243,6 +243,7 @@ class LDBoardTester(object):
             self.__gpio.commit()
             # execute read
             modbus = serial_modbus.read_holding_registers(start, 1, slave)
+            _LOGGER.debug(modbus)
             # check response
             success = False
             if port == 0:
