@@ -22,7 +22,7 @@ def start() -> None:
         if args['verbose'] >= 2:
             logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
         elif args['verbose'] == 1:
-            logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+            logging.basicConfig(level=logging.INFO, format='%(levelname)s - %(message)s')
 
 
 if __name__ == "__main__":
