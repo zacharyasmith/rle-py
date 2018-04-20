@@ -58,4 +58,5 @@ class ModBus(object):
             _LOGGER.debug('ModBus::read_holding_registers:: Response: {}'.format(a.registers))
         else:
             _LOGGER.debug('ModBus::read_holding_registers:: Failed. {}'.format(a))
+            return False
         return a
