@@ -279,13 +279,22 @@ class LDBoardTester(object):
         _LOGGER.info("LDBoardTest::test_modbus:: Results: {}".format(passing))
         return passing.count(False) == 0
 
-    def test_startup_sequence(self):
+    def test_startup_sequence(self, board=LD5200):
         """
         Test internal UART, MRAM status from board reset.
+
+        Args:
+            board: LD5200 or LD2100
         """
         _LOGGER.info('LDBoardTester::test_startup_sequence:: Testing startup sequence.')
         _LOGGER.info('LDBoardTester::test_startup_sequence:: Sending `reset` command.')
         response = self.__serial.read_stop(b'reset\r\n', r'User prgm is not valid', timeout=15)
+        if board == LDBoardTester.LD5200:
+            match_freq = re.search(r'(f\d:\s\d+hz\spass(\s\s)?){4}', str(response))
+            if not match_freq:
+                _LOGGER.info('LDBoardTester::test_startup_sequence:: Frequency check failed.')
+                return False
+            return True
         match_mram = re.search(r'(?:Mram Test: )(\d+)(?://)(\d+)', str(response))
         if not match_mram:
             _LOGGER.info('LDBoardTester::test_startup_sequence:: Nonconforming `mram` response.')

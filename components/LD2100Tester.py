@@ -39,7 +39,7 @@ class LD2100Tester(LDBoard):
                 # rs232_connection implied by success with __enter__
                 self.process_test_result('rs232_connection', result=True)
                 self.process_test_result('datetime_set', ld_board.test_datetime_set())
-                self.process_test_result('startup_sequence', ld_board.test_startup_sequence())
+                self.process_test_result('startup_sequence', ld_board.test_startup_sequence(LDBoardTester.LD2100))
                 self.process_test_result('ps_voltage', ld_board.test_voltage())
                 self.process_test_result('rs485_modbus', ld_board.test_modbus(LDBoardTester.LD2100))
                 # self.process_test_result('ethernet_ping',
