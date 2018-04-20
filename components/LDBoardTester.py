@@ -230,7 +230,7 @@ class LDBoardTester(object):
         serial_modbus = ModBus(device_file='/dev/rleRS485', timeout=1)
         if board == self.LD2100:
             response = serial_modbus.read_holding_registers(start, 1, slave)
-            if len(response.registers) == 1:
+            if response:
                 return response.registers[0] == 1234
         # listener
         self.__serial.reset_input_buffer()
@@ -239,11 +239,17 @@ class LDBoardTester(object):
         strike = 0
         passing = [False for i in range(3)]
         while port < 3:
+            # stage change to port
             self.__gpio.stage(GPIO.RS485, port)
             self.__gpio.commit()
+            # three strikes and continue
+            if strike == 3:
+                port += 1
+                continue
             # execute read
             modbus = serial_modbus.read_holding_registers(start, 1, slave)
-            _LOGGER.debug(modbus)
+            if not modbus:
+                strike += 1
             # check response
             success = False
             if port == 0:
@@ -262,9 +268,6 @@ class LDBoardTester(object):
                 port += 1
             else:
                 strike += 1
-            # three strikes and continue
-            if strike == 3:
-                port += 1
             # see that modbustest is still active
             response = self.__serial.read_line()
             ok_match = re.search(r'ok', str(response))
