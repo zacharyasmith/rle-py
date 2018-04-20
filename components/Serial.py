@@ -109,6 +109,8 @@ class Serial(object):
                 ret_val += line
                 # set found lv
                 found = _re.search(str(line))
+        except TimeoutException:
+            _LOGGER.debug("Serial::read_stop:: Timeout raised.")
         finally:
             self.reset_input_buffer()
             signal.alarm(0)
