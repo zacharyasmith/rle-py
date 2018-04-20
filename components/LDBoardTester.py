@@ -32,7 +32,7 @@ class LDBoardTester(object):
     __serial = None
     __date_set = None
 
-    def __init__(self, gpio):
+    def __init__(self, gpio: GPIO):
         """
         Constructor
         """
@@ -57,7 +57,7 @@ class LDBoardTester(object):
         """
         self.__serial.close()
 
-    def configure_ip_address(self, ip_address):
+    def configure_ip_address(self, ip_address: str) -> bool:
         """
         Configures IP address by writing command to bootloader
 
@@ -76,7 +76,7 @@ class LDBoardTester(object):
             return False
         return True
 
-    def test_ethernet(self, ip_address='10.0.0.188', configure_ip_address=False):
+    def test_ethernet(self, ip_address='10.0.0.188', configure_ip_address=False) -> bool:
         """
         Test the Ethernet connection with a ping.
 
@@ -109,7 +109,7 @@ class LDBoardTester(object):
         _LOGGER.warning('LDBoardTest::test_ethernet:: Packets lost. Test failed.')
         return False
 
-    def __adc_read(self):
+    def __adc_read(self) -> tuple:
         """
         Internal function. Execute adc1 command and read back
 
@@ -137,7 +137,7 @@ class LDBoardTester(object):
         leak = match_leak.group(1)
         return (int(leg1), int(leg2), int(leak))
 
-    def test_length_detector(self):
+    def test_length_detector(self) -> bool:
         """
         Test utilizing length emulator.
 
@@ -171,7 +171,7 @@ class LDBoardTester(object):
             return False
         return passing
 
-    def test_short_detector(self):
+    def test_short_detector(self) -> bool:
         """
         Test utilizing cable short emulator.
 
@@ -210,52 +210,68 @@ class LDBoardTester(object):
             return False
         return passing
 
-    def test_modbus(self, num_ports=3):
+    LD2100 = "LD2100"
+    LD5200 = "LD5200"
+
+    def test_modbus(self, board) -> bool:
         """
         Test the RS485 modbus connection
+
+        Args:
+            board: String LD5200 | LD2100
 
         Returns:
             Boolean success
         """
-        _LOGGER.info('LDBoardTest::test_modbus:: Testing modbus register read.')
+        _LOGGER.info('LDBoardTest::test_modbus:: Testing modbus register read for `{}`.'.format(board))
         # forming ModBus request
-        slave, start = 254, 40000+9990
-        # send listening command
+        slave, start = 254, 9998
+        # create modbus client
+        serial_modbus = ModBus(device_file='/dev/rleRS485', timeout=1)
+        if board == self.LD2100:
+            response = serial_modbus.read_holding_registers(start, 1, slave)
+            if len(response.registers) == 1:
+                return response.registers[0] == 1234
+        # listener
         self.__serial.reset_input_buffer()
         self.__serial.send_command(b'modbustest\r\n')
-        serial_modbus = ModBus(device_file='/dev/rleRS485', timeout=1)
-        serial_modbus.read_input_registers(start, unit=slave)
-        # start timer for 5 seconds
-        signal.alarm(5)
-        passing = [False for i in range(num_ports)]
-        try:
-            while passing.count(False) > 0:
-                # read comm line
-                response = self.__serial.read_line()
-                # compare against all possible ports
-                modbus_match = re.search(r'(?:port)(\d)(?:-mb\spacket\sprocess)', str(response))
-                ok_match = re.search(r'ok', str(response))
-                port = None
-                if modbus_match:
-                    port = int(modbus_match.group(1))
-                elif ok_match:
-                    self.__serial.send_command(b'modbustest\r\n')
-                    serial_modbus.read_input_registers(start, unit=slave)
-                    continue
-                else:
-                    continue    # line read not useful
-                for i in range(num_ports):
-                    if i + 1 == port:   # success!
-                        _LOGGER.info("LDBoardTest::test_modbus:: Port #{} test successful.".format(i + 1))
-                        passing[i] = True
-            # cancel timer
-            signal.alarm(0)
-        except TimeoutException:
-            _LOGGER.warning('LDBoardTest::test_modbus:: Timeout. Test failed.')
-            return False
+        port = 0
+        strike = 0
+        passing = [False for i in range(3)]
+        while port < 3:
+            self.__gpio.stage(GPIO.RS485, port)
+            self.__gpio.commit()
+            # execute read
+            modbus = serial_modbus.read_holding_registers(start, 1, slave)
+            # check response
+            success = False
+            if port == 0:
+                if modbus.registers[0] == 111:
+                    success = True
+                    passing[0] = True
+            elif port == 1:
+                if modbus.registers[0] == 222:
+                    success = True
+                    passing[1] = True
+            elif port == 2:
+                if modbus.registers[0] == 333:
+                    success = True
+                    passing[2] = True
+            if success:
+                port += 1
+            else:
+                strike += 1
+            # three strikes and continue
+            if strike == 3:
+                port += 1
+            # see that modbustest is still active
+            response = self.__serial.read_line()
+            ok_match = re.search(r'ok', str(response))
+            if ok_match:
+                self.__serial.send_command(b'modbustest\r\n')
         self.__serial.reset_input_buffer()
-        # implied success
-        return True
+        _LOGGER.info("LDBoardTest::test_modbus:: Results: {}".format(passing))
+        return passing.count(False) == 0
 
     def test_startup_sequence(self):
         """

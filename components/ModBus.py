@@ -6,6 +6,7 @@ Author:
 """
 import logging
 from pymodbus.client.sync import ModbusSerialClient
+from pymodbus.client.common import ReadHoldingRegistersResponse
 
 
 _LOGGER = logging.getLogger()
@@ -18,36 +19,29 @@ class ModBus(object):
 
     __serial_client = None
     __device_file = None
-    __tcp_client = None
-    __is_serial = None
 
     def __init__(self, device_file="", timeout=5):
         """
         Initializes modbus communication
 
         Args:
-            method: serial|tcp
             device_file: e.g. /dev/ttyUSB0
-            host: e.g. 10.0.0.1
+            timeout: seconds
         """
-        self.__is_serial = True
         self.__device_file = device_file
         self.__serial_client = ModbusSerialClient(method="rtu", port=device_file, baudrate=9600,
                                                   timeout=timeout)
         connection = self.__serial_client.connect()
-        _LOGGER.info("ModBus:: Connection status with {} : {}"
-                     .format(self.__device_file if self.__is_serial else self.__tcp_client,
-                             connection))
+        _LOGGER.debug("ModBus:: Connection status with {} : {}".format(self.__device_file, connection))
 
     def close(self):
         """
         Closes connection
         """
-        _LOGGER.info('ModBus::close:: Closing connection with {}'.format(
-            self.__device_file if self.__is_serial else self.__tcp_client))
+        _LOGGER.debug('ModBus::close:: Closing connection with {}'.format(self.__device_file))
         self.__serial_client.close()
 
-    def read_input_registers(self, address, count=2, unit=0x02):
+    def read_holding_registers(self, address: int, count=2, unit=0x02) -> ReadHoldingRegistersResponse:
         """
         Reads and returns modbus register.
 
@@ -59,18 +53,6 @@ class ModBus(object):
         Returns:
             Returns object(s).
         """
-        return self.__serial_client.read_input_registers(address, count, unit=unit)
-
-    def read_holding_registers(self, address, count=2, unit=0x02):
-        """
-        Reads and returns modbus register.
-
-        Args:
-            address: Starting numerical modbus register address.
-            count: Number of registers.
-            unit: Slave address.
-
-        Returns:
-            Returns object(s).
-        """
-        return self.__serial_client.read_holding_registers(address, count, unit=unit)
+        a = self.__serial_client.read_holding_registers(address, count, unit=unit)
+        _LOGGER.debug('ModBus::read_holding_registers:: Response: {}'.format(a.registers))
+        return a

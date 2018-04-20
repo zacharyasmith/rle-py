@@ -76,7 +76,7 @@ class TheApp(QMainWindow, app.Ui_MainWindow):
     PASSING = "#33CC33"
     WAITING = "#FFA500"
 
-    def start_btn_handler(self):
+    def start_btn_handler(self) -> None:
         self.resume_btn.setDisabled(True)
         proceed = True
         for i in range(6):
@@ -85,6 +85,9 @@ class TheApp(QMainWindow, app.Ui_MainWindow):
             if not ok:
                 proceed = False
                 break
+            if len(mac) == 0:
+                self.set_status(i, self.INACTIVE)
+                continue
             serial, ok1 = QInputDialog.getText(self, "Serial", "Enter Serial ID ({})".format(board))
             if ok and ok1:
                 if len(mac) > 0 and len(serial) > 0:
@@ -97,13 +100,13 @@ class TheApp(QMainWindow, app.Ui_MainWindow):
                 proceed = False
                 break
         if proceed:
-            # Exec tests
+            # TODO Exec tests
             pass
         else:
             self.set_status(-1, self.WAITING)
         self.resume_btn.setDisabled(False)
 
-    def set_status(self, tray, status):
+    def set_status(self, tray, status) -> None:
         if tray == -1:
             for i in range(6):
                 self.objects[i]['label'].setStyleSheet("background-color: {}".format(status))
@@ -111,7 +114,7 @@ class TheApp(QMainWindow, app.Ui_MainWindow):
             self.objects[tray]['label'].setStyleSheet("background-color: {}".format(status))
 
 
-def main():
+def main() -> None:
     app = QApplication(sys.argv)
     window = TheApp()
     window.show()

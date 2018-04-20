@@ -9,14 +9,9 @@ import argparse
 from components.LD5200Tester import LD5200Tester
 from components.LD2100Tester import LD2100Tester
 from components.GPIO import GPIO
-# from view.MainWindow import MainWindow
-
-# if __name__ == "__main__" and False:
-#     ui = MainWindow()
-#     print("here")
 
 
-def start():
+def start() -> None:
     # argument parser
     parser = argparse.ArgumentParser(description='RLE LD Board Tester.')
     # verbosity
@@ -28,6 +23,10 @@ def start():
             logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
         elif args['verbose'] == 1:
             logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+
+
+if __name__ == "__main__":
+    start()
     gpio = GPIO()
     # gpio.stage(GPIO.BOARD, state=0)
     # gpio.stage(GPIO.RS485, state=0)
@@ -40,6 +39,3 @@ def start():
     _BOARD1 = LD5200Tester(serial='LD5200_BOARD1', mac='00:25:96:FF:FE:12:34:56')
     _BOARD1.test(gpio, ip_address='10.0.0.188')
     print(_BOARD1.results())
-
-if __name__ == "__main__":
-    start()
