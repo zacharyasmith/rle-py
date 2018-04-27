@@ -1,11 +1,13 @@
 import sys
 
-from PyQt5.QtWidgets import QMainWindow, QApplication, QInputDialog, QErrorMessage
+from PyQt5.QtWidgets import QMainWindow, QApplication, QInputDialog, QErrorMessage, QMessageBox
 from PyQt5.QtCore import QThreadPool
+import re
 import threading
-from view.SeaLionThread import SeaLionThread
+from view.SeaLionThread import SeaLionThread, TimeUpdator
 import view.MainWindow as app
 from components.LDBoardTester import LDBoardTester
+from datetime import datetime
 
 
 class SeaLionGUI(QMainWindow, app.Ui_MainWindow):
@@ -15,7 +17,6 @@ class SeaLionGUI(QMainWindow, app.Ui_MainWindow):
 
         # setup threadpool
         self.threadpool = QThreadPool()
-        self.threadlock = threading.Lock()
 
         self.objects = dict()
         for i in range(6):
@@ -99,6 +100,9 @@ class SeaLionGUI(QMainWindow, app.Ui_MainWindow):
         self.cancel_btn.setDisabled(True)
         self.resume_btn.clicked.connect(self.start_btn_handler)
 
+        self.test_start = None
+        self.testing = False
+
     # create other constants
     INACTIVE = "#f2f2f2"
     FAIL = "#FF5B5B"
@@ -106,6 +110,12 @@ class SeaLionGUI(QMainWindow, app.Ui_MainWindow):
     WAITING = "#FFA500"
 
     def start_btn_handler(self) -> None:
+        """
+        The method called when start button is clicked.
+        Will process each MAC/Serial combo and execute SeaLionThread when done.
+        :return: None
+        """
+        self.status_bar.showMessage("Starting...")
         self.resume_btn.setDisabled(True)
         self.update_progress(-1, 0, 1)
         self.set_status(-1, self.WAITING)
@@ -117,8 +127,12 @@ class SeaLionGUI(QMainWindow, app.Ui_MainWindow):
             if not ok:
                 proceed = False
                 break
-            elif len(mac) == 0:
-                # TODO verify MAC
+            elif len(mac) > 0:
+                mac, ok = self.__prompt_mac_address(mac, board)
+                if not ok:
+                    proceed = False
+                    break
+            else:
                 self.objects[i]["active"] = False
                 self.set_status(i, self.INACTIVE)
                 continue
@@ -129,6 +143,7 @@ class SeaLionGUI(QMainWindow, app.Ui_MainWindow):
                     self.objects[i]["serial"] = serial
                     self.objects[i]["active"] = True
                     self.set_status(i, self.PASSING)
+                    self.update_debug_text(i, "Waiting to start")
                 else:
                     self.objects[i]["active"] = False
                     self.set_status(i, self.INACTIVE)
@@ -146,24 +161,62 @@ class SeaLionGUI(QMainWindow, app.Ui_MainWindow):
             worker.signals.debug_update.connect(self._signal_debug_update)
             worker.signals.update.connect(self._signal_update)
             self.threadpool.start(worker)
+            # test started
+            self.testing = True
+            self.test_start = datetime.now()
+            time_thread = TimeUpdator(self)
+            time_thread.signals.status_bar.connect(self._signal_status_bar)
+            self.threadpool.start(time_thread)
         else:
             self.reset_trays()
         self.resume_btn.setDisabled(False)
 
+    def __prompt_mac_address(self, attempt: str, tray: str) -> tuple:
+        match = re.match(r'([0-9A-F]{2}:){5}([0-9A-F]{2})', attempt)
+        if not match:
+            msg_box = QMessageBox(self)
+            msg_box.setText("Type MAC address correctly. ex. 12:34:56:AB:CD:EF")
+            msg_box.exec_()
+            mac, ok = QInputDialog.getText(self, 'MAC', "Enter MAC Address Again ({})".format(tray))
+            if not ok:
+                return mac, ok
+            return self.__prompt_mac_address(mac, tray)
+        else:
+            return attempt, True
+
     def set_status(self, tray: int, status: str) -> None:
-        self.threadlock.acquire()
+        """
+        Sets the status `LED` for each tray. Uses Hex RGB values.
+
+        :param tray: int selector. -1 for all
+        :param status: Hex RGB
+        :return: None
+        """
         if tray == -1:
             for i in range(6):
                 self.objects[i]['label'].setStyleSheet("background-color: {}".format(status))
         else:
             self.objects[tray]['label'].setStyleSheet("background-color: {}".format(status))
-        self.threadlock.release()
 
     def test_passing(self, tray: int, passing: bool) -> None:
+        """
+        Sets the status `LED` to pass or fail.
+
+        :param tray: int selector
+        :param passing: bool whether the tray is passing or not
+        :return: None
+        """
         self.set_status(tray, self.PASSING if passing else self.FAIL)
 
     def update_progress(self, tray: int, count: int, total: int) -> None:
-        self.threadlock.acquire()
+        """
+        Update the progress bar.
+
+        :param tray: int selector. -1 for all.
+        :param count: int count of tests passed
+        :param total: int count total tests
+        :return: None
+        """
         if tray == -1:
             for i in range(6):
                 self.objects[i]['progress'].setMaximum(total)
@@ -171,36 +224,55 @@ class SeaLionGUI(QMainWindow, app.Ui_MainWindow):
         else:
             self.objects[tray]['progress'].setMaximum(total)
             self.objects[tray]['progress'].setValue(count)
-        self.threadlock.release()
 
     def update_debug_text(self, tray: int, text: str) -> None:
-        self.threadlock.acquire()
+        """
+        Updates the text in the tray. Useful for operator.
+
+        :param tray: int selector. -1 for all.
+        :param text: str message to be displayed
+        :return: None
+        """
         if tray == -1:
             for i in range(6):
                 self.objects[i]['debug'].setText(text)
         else:
             self.objects[tray]['debug'].setText(text)
-        self.threadlock.release()
 
     def set_cmd_btn_diabled(self, tray: int, set: bool) -> None:
-        self.threadlock.acquire()
+        """
+        Disables the command button or reenables
+
+        :param tray: int selector. -1 for all
+        :param set: bool wether it disables or reenables
+        :return: None
+        """
         if tray == -1:
             for i in range(6):
                 self.objects[i]['cmd_btn'].setDisabled(set)
         else:
             self.objects[tray]['cmd_btn'].setDisabled(set)
-        self.threadlock.release()
 
     def set_info_btn_disabled(self, tray: int, set: bool) -> None:
-        self.threadlock.acquire()
+        """
+        Disables the info button or reenables
+
+        :param tray: int selector. -1 for all
+        :param set: bool whether it disables or reenables
+        :return: None
+        """
         if tray == -1:
             for i in range(6):
                 self.objects[i]['info_btn'].setDisabled(set)
         else:
             self.objects[tray]['info_btn'].setDisabled(set)
-        self.threadlock.release()
 
     def reset_trays(self) -> None:
+        """
+        Resets the trays to waiting state.
+
+        :return: None
+        """
         self.update_progress(-1, 0, 1)
         self.update_debug_text(-1, "Awaiting start.")
         self.set_info_btn_disabled(-1, True)
@@ -210,7 +282,7 @@ class SeaLionGUI(QMainWindow, app.Ui_MainWindow):
         """
         message: (type: str, text: str)
         """
-        QErrorMessage(self).showMessage(message[1], message[0])
+        QErrorMessage(self).showMessage('*{}* {}'.format(message[0], message[1]))
 
     def _signal_debug_update(self, data: tuple):
         """
@@ -227,12 +299,22 @@ class SeaLionGUI(QMainWindow, app.Ui_MainWindow):
         self.update_progress(data[0], tray['tests_finished'], tray['tests_total'])
         self.test_passing(data[0], tray['passing'])
 
+    def _signal_status_bar(self, message: str):
+        """
+        message: str
+        """
+        self.status_bar.showMessage(message)
+
     def _signal_test_finished(self) -> None:
+        """
+        signaled from thread that all tests are completed
+        """
         self.pause_btn.setDisabled(True)
         self.cancel_btn.setDisabled(True)
         self.resume_btn.setDisabled(False)
         self.set_cmd_btn_diabled(-1, False)
         self.set_info_btn_disabled(-1, False)
+        self.testing = False
         # TODO write results to file
 
 

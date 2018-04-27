@@ -7,7 +7,6 @@ Author:
 import datetime
 import logging
 import re
-import signal
 import subprocess
 from time import sleep
 
@@ -18,13 +17,6 @@ from components.GPIO import GPIO
 from components.ADC import read as adc_read, read_diff as adc_read_diff
 
 _LOGGER = logging.getLogger()
-
-
-def timeout_handler(arg1, arg2):
-    """
-    Used in alarm contexts.
-    """
-    raise TimeoutException('Timeout.')
 
 
 class LDBoardTester(object):
@@ -65,11 +57,12 @@ class LDBoardTester(object):
     def connect_serial(self, mac=None) -> bool:
         _LOGGER.info('LDBoardTest::connect_serial:: Connecting RS232.')
         self.__serial = Serial('/dev/rleRS232')
-        if mac:
+        if self.__serial and mac:
             _LOGGER.info('LDBoardTest::connect_serial:: Writing MAC address {} (failure raises exception)'.format(mac))
-            self.__serial.send_command(bytes(mac + '\r\n', 'utf-8'))
-            sleep(7)
+            self.__serial.send_command(bytes('mac ' + mac + '\r\n', 'utf-8'))
+            sleep(10)
             self.__serial._verify_connection(7)
+        return True
 
 
     def test_led(self, board: str) -> bool:
@@ -305,12 +298,12 @@ class LDBoardTester(object):
                 return response.registers[0] == 1234
             return False
         # listener
-        self.__serial.reset_input_buffer()
-        self.__serial.send_command(b'modbustest\r\n')
         port = 0
         strike = 0
         passing = [False for i in range(3)]
         while port < 3:
+            # see that modbustest is still active
+            self.__serial.send_command(b'modbustest\r\n')
             # stage change to port
             self.__gpio.stage(GPIO.RS485, port)
             self.__gpio.commit()
@@ -342,11 +335,6 @@ class LDBoardTester(object):
                 port += 1
             else:
                 strike += 1
-            # see that modbustest is still active
-            response = self.__serial.read_line()
-            ok_match = re.search(r'ok', str(response))
-            if ok_match:
-                self.__serial.send_command(b'modbustest\r\n')
         # send ctrl-c to cancel just in case
         self.__serial.send_command(b'\x03\r\n')
         self.__serial.reset_input_buffer()
@@ -414,14 +402,13 @@ class LDBoardTester(object):
         self.__date_set = datetime.datetime.today()
         # date 01/01/17
         date = b'date '
-        date += bytearray(self.__date_set.strftime("%x"), 'utf8')
+        date += bytearray(self.__date_set.strftime("%m/%d/%y"), 'utf8')
         date += b'\r\n'
         # time 12:00:00
         time = b'time '
-        time += bytearray(self.__date_set.strftime("%X"), 'utf8')
+        time += bytearray(self.__date_set.strftime("%H:%M:%S"), 'utf8')
         time += b'\r\n'
         _LOGGER.info("LDBoardTester::test_datetime_set:: Testing datetime setting.")
-        # TODO sends first three characters if enacted imm. after test startup
         self.__serial.read_stop(date, regex=r'ok')
         self.__serial.read_stop(time, regex=r'ok')
         # implies regex succeeded
@@ -436,32 +423,36 @@ class LDBoardTester(object):
             raise OperationsOutOfOrderException
         _LOGGER.info("LDBoardTester::test_datetime_read:: Testing datetime reading.")
         now = datetime.datetime.now()
-        result = self.__serial.read_stop(b'time\r\n', regex=self.__date_set.strftime("%x"))
-        # regex: 01/01/17 12:00:00
-        match = re.search(r'(\d{2}/\d{2}/\d{2})\s+(\d{2}:\d{2}:\d{2})', str(result))
-        if match:
-            time, date = match.group(1), match.group(2)
-            _LOGGER.info("LDBoardTester::test_datetime_read:: Read datetime as {} {}"
-                         .format(date, time))
-            _LOGGER.info("LDBoardTester::test_datetime_read:: Current datetime is {}"
-                         .format(datetime.datetime.now().strftime("%X %x")))
-            # parse datetime
-            dt = datetime.datetime.strptime("{} {}".format(date, time), "%X %x")
-            elapsed = dt - now
-            _LOGGER.info("LDBoardTester::test_datetime_read:: Time delta is {} sec"
-                         .format(abs(elapsed.total_seconds())))
-            # seconds allowed to be off by
-            allowance = 5
-            if abs(elapsed.total_seconds()) >= allowance:
-                _LOGGER.info("LDBoardTester::test_datetime_read:: Failure. Time difference is "
-                             "greater than {} seconds.".format(allowance))
-                return False
-            # else
-            _LOGGER.info("LDBoardTester::test_datetime_read:: Passed. Delta <= {} sec"
-                         .format(allowance))
-            return True
-        else:
-            _LOGGER.info("LDBoardTester::test_datetime_read:: Expecting "
-                         "(\d{{2}}/\d{{2}}/\d{{2}})\s+(\d{{2}}:\d{{2}}:\d{{2}}) got {}"
-                         .format(str(result)))
-            return False
+        self.__serial.send_command(b'time\r\n')
+        count = 0
+        while count < 2:
+            result = self.__serial.read_line()
+            # regex: 01/01/17 12:00:00
+            match = re.search(r'(\d{2}/\d{2}/\d{2})\s+(\d{2}:\d{2}:\d{2})', str(result))
+            if match:
+                time, date = match.group(1), match.group(2)
+                _LOGGER.info("LDBoardTester::test_datetime_read:: Read datetime as {} {}"
+                             .format(date, time))
+                _LOGGER.info("LDBoardTester::test_datetime_read:: Current datetime is {}"
+                             .format(datetime.datetime.now().strftime("%m/%d/%y %H:%M:%S")))
+                # parse datetime
+                dt = datetime.datetime.strptime("{} {}".format(date, time), "%H:%M:%S %m/%d/%y")
+                elapsed = dt - now
+                _LOGGER.info("LDBoardTester::test_datetime_read:: Time delta is {} sec"
+                             .format(abs(elapsed.total_seconds())))
+                # seconds allowed to be off by
+                allowance = 5
+                if abs(elapsed.total_seconds()) >= allowance:
+                    _LOGGER.info("LDBoardTester::test_datetime_read:: Failure. Time difference is "
+                                 "greater than {} seconds.".format(allowance))
+                    return False
+                # else
+                _LOGGER.info("LDBoardTester::test_datetime_read:: Passed. Delta <= {} sec"
+                             .format(allowance))
+                return True
+            else:
+                count += 1
+        _LOGGER.info("LDBoardTester::test_datetime_read:: Expecting "
+                     "(\d{{2}}/\d{{2}}/\d{{2}})\s+(\d{{2}}:\d{{2}}:\d{{2}}) got {}"
+                     .format(str(result)))
+        return False
