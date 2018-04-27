@@ -28,7 +28,7 @@ def start() -> None:
 if __name__ == "__main__":
     start()
     gpio = GPIO()
-    gpio.stage(GPIO.BOARD, state=2)
+    gpio.stage(GPIO.BOARD, state=0)
     gpio.commit()
     #_BOARD0 = LD2100Tester(serial='LD2100_BOARD0', mac='00:25:96:FF:FE:12:34:57')
     #_BOARD0.test(gpio, ip_address='10.0.0.189')

@@ -62,7 +62,7 @@ def read(pin, gain=1):
     adc = Adafruit_ADS1x15.ADS1015()
     val = adc.read_adc(pin, gain)
     _LOGGER.debug('ADC::read:: ({},{}) Read {}'.format(pin, gain, val))
-    val = translate(gain, val)
+    val = translate(val, gain)
     _LOGGER.debug('ADC::read:: Translated to {}'.format(val))
     return val
 
@@ -80,7 +80,7 @@ def read_diff(gain=1):
     adc = Adafruit_ADS1x15.ADS1015()
     val = adc.read_adc_difference(0, gain=gain)
     _LOGGER.debug('ADC::read_diff:: ({}) Read {}'.format(gain, val))
-    val = translate(gain, val)
+    val = translate(val, gain)
     _LOGGER.debug('ADC::read_diff:: Translated to {}'.format(val))
     return val
 

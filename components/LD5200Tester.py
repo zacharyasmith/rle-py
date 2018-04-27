@@ -26,7 +26,7 @@ class LD5200Tester(LDBoard):
         """
         Constructor.
         """
-        LDBoard.__init__(self, serial, mac)
+        LDBoard.__init__(self, serial, mac, 'LD5200', LDBoardTester.LD5200)
 
     def test(self, gpio, ip_address):
         """
@@ -36,21 +36,23 @@ class LD5200Tester(LDBoard):
             Boolean of board passing
         """
         _LOGGER.info('Executing LD5200 test.\n\tSerial: {}\n\tMAC: {}'.format(self.serial_address, self.mac_address))
+        ld_board = LDBoardTester(gpio)
+        self.process_test_result('led_test', ld_board.test_led(LDBoardTester.LD5200))
+        return self.passing
         try:
             with LDBoardTester(gpio) as ld_board:
                 # rs232_connection implied by success with __enter__
                 self.process_test_result('rs232_connection', result=True)
-                self.process_test_result('datetime_set', ld_board.test_datetime_set())
-                self.process_test_result('startup_sequence', ld_board.test_startup_sequence())
-                self.process_test_result('ps_voltage', ld_board.test_voltage())
-                self.process_test_result('length_detection', ld_board.test_length_detector(LDBoardTester.LD5200))
-                self.process_test_result('short_detection', ld_board.test_short_detector(LDBoardTester.LD5200))
+                # self.process_test_result('datetime_set', ld_board.test_datetime_set())
+                # self.process_test_result('startup_sequence', ld_board.test_startup_sequence())
+                # self.process_test_result('ps_voltage', ld_board.test_voltage())
+                # self.process_test_result('length_detection', ld_board.test_length_detector(LDBoardTester.LD5200))
+                # self.process_test_result('short_detection', ld_board.test_short_detector(LDBoardTester.LD5200))
                 self.process_test_result('rs485_modbus', ld_board.test_modbus(LDBoardTester.LD5200))
-                self.process_test_result('ethernet_ping',
-                                         ld_board.test_ethernet(ip_address, configure_ip_address=True))
-                _LOGGER.info('Sleeping for 3 seconds...')
-                sleep(3)
-                self.process_test_result('datetime_read', ld_board.test_datetime_read())
+                # self.process_test_result('ethernet_ping',
+                #                          ld_board.test_ethernet(ip_address, configure_ip_address=True))
+                # self.process_test_result('datetime_read', ld_board.test_datetime_read())
+                self.process_test_result('led_test', ld_board.test_led(LDBoardTester.LD5200))
         except ConnectionRefusalException:
             _LOGGER.error("RS232 connection refused.")
             self.process_test_result('rs232_connection', False)

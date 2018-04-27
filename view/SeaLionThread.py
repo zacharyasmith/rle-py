@@ -231,16 +231,41 @@ class SeaLionThread(QRunnable):
                     return
 
                 # RS485 modbus
-                self.signals.debug_update.emit((i, "Running: RS485 ModBus"))
-                if not gui.debug:
-                    result = ld_board.test_modbus(curr['board_type'])
-                else:
-                    result = True
-                    sleep(2)
-                test_container.process_test_result('rs485_modbus', result)
-                curr['tests_finished'] += 1
-                curr['passing'] = curr['passing'] and result
-                self.signals.update.emit((i, "Done: RS485 ModBus"))
+                try:
+                    self.signals.debug_update.emit((i, "Running: RS485 ModBus"))
+                    if not gui.debug:
+                        # LD5200 3 -> 3
+                        # LD5200 4 -> 2
+                        # LD5200 5 -> 1
+                        if curr['GPIO_address'] == 3:
+                            gpio.stage(GPIO.RS485, 2)
+                            gpio.commit()
+                        elif curr['GPIO_address'] == 4:
+                            gpio.stage(GPIO.RS485, 1)
+                            gpio.commit()
+                        elif curr['GPIO_address'] == 5:
+                            gpio.stage(GPIO.RS485, 0)
+                            gpio.commit()
+                        sleep(1)
+                        result = ld_board.test_modbus(curr['board_type'])
+                    else:
+                        result = True
+                        sleep(2)
+                    test_container.process_test_result('rs485_modbus', result)
+                    curr['tests_finished'] += 1
+                    curr['passing'] = curr['passing'] and result
+                    self.signals.update.emit((i, "Done: RS485 ModBus"))
+                except ConnectionException as e:
+                    if e.string:
+                        _LOGGER.error(e.string)
+                    _LOGGER.error('USB to RS485(ModBus) adapter failed to connect.')
+                    self.signals.alert.emit(("USB/RS485 Connection Refused",
+                                             "Check that no other processes are using"
+                                             "it and that it is plugged in."))
+                    curr['passing'] = False
+                # turn off
+                gpio.stage(GPIO.RS485, 3)
+                gpio.commit()
 
                 # check for signals
                 if self.__check_signals(i):
@@ -280,7 +305,7 @@ class SeaLionThread(QRunnable):
 
                 # LED test
                 self.signals.debug_update.emit((i, "Running: LED test"))
-                if not gui.debug:
+                if gui.debug:
                     result = ld_board.test_led(curr['board_type'])
                 else:
                     result = True
@@ -297,7 +322,7 @@ class SeaLionThread(QRunnable):
                         return
 
                     self.signals.debug_update.emit((i, "Running: Current source"))
-                    if not gui.debug:
+                    if gui.debug:
                         result = ld_board.output_current()
                     else:
                         result = True
@@ -314,15 +339,6 @@ class SeaLionThread(QRunnable):
                 curr['active'] = False
                 curr['passing'] = False
                 self.signals.update.emit((i, "RS232 connection issue"))
-            except ConnectionException as e:
-                if e.string:
-                    _LOGGER.error(e.string)
-                _LOGGER.error('USB to RS485(ModBus) adapter failed to connect.')
-                self.signals.alert.emit(("USB/RS485 Connection Refused",
-                                         "Check that no other processes are using it."))
-                curr['active'] = False
-                curr['passing'] = False
-                self.signals.update.emit((i, "RS485 connection issue"))
             except SerialException as e:
                 if e.strerror:
                     _LOGGER.error(e.strerror)
@@ -359,7 +375,7 @@ class SeaLionThread(QRunnable):
             for handler in logging.root.handlers[:]:
                 logging.root.removeHandler(handler)
             path = curr['log_path']
-            logging.basicConfig(filename=path, filemode='a', level=logging.INFO,
+            logging.basicConfig(filename=path, filemode='a', level=logging.DEBUG,
                                 format=logging_format)
 
             ld_board = LDBoardTester(gpio)

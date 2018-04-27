@@ -63,6 +63,8 @@ class GPIO(object):
     __board_selector = {
         #        C  B   A
         'pins': [7, 11, 12],
+        #          C   B   A
+        'pins_2': [31, 32, 33],
         'present_state': tuple(),
         'state': tuple()
     }
@@ -121,6 +123,14 @@ class GPIO(object):
         'state': tuple()
     }
 
+    # Inputs for Relay Test
+    # Mapping
+    # TODO
+    _relays = {
+        'pins': [26, 27, 28, 29],
+        'last_known': tuple()
+    }
+
     def __init__(self):
         """
         Initializes internal settings.
@@ -129,6 +139,7 @@ class GPIO(object):
         # create channel list as combo of other pin lists
         self.__channel_list = list()
         self.__channel_list.extend(self.__board_selector['pins'])
+        self.__channel_list.extend(self.__board_selector['pins_2'])
         self.__channel_list.extend(self.__short_selector['pins'])
         self.__channel_list.extend(self.__length_selector['pins'])
         self.__channel_list.extend(self.__rs485_selector['pins'])
@@ -165,7 +176,9 @@ class GPIO(object):
         # only update if not equal
         if self.__board_selector['present_state'] != self.__board_selector['state']:
             _LOGGER.debug('GPIO::commit:: Committing changes on `{}`.'.format('board_selector'))
+            # update both pin banks
             _gpio.output(self.__board_selector['pins'], self.__board_selector['state'])
+            _gpio.output(self.__board_selector['pins_2'], self.__board_selector['state'])
             self.__board_selector['present_state'] = self.__board_selector['state']
 
         if self.__short_selector['present_state'] != self.__short_selector['state']:

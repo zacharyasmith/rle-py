@@ -64,7 +64,6 @@ class LDBoardTester(object):
             self.__serial._verify_connection(7)
         return True
 
-
     def test_led(self, board: str) -> bool:
         """
         Tests the onboard LED
@@ -250,6 +249,7 @@ class LDBoardTester(object):
         for r in test_values:    # selected with truth table values
             self.__gpio.stage(GPIO.SHORT_EMULATOR, sel)
             self.__gpio.commit()
+            sleep(1)
             _LOGGER.info('LDBoardTest::short_length_detector:: Expecting {} ohms'.format(r))
             result = self.__adc_read()
             if not result:
@@ -270,7 +270,7 @@ class LDBoardTester(object):
         result = self.__adc_read()
         _LOGGER.info('LDBoardTest::short_length_detector:: Executing break test.')
         _LOGGER.info('LDBoardTest::short_length_detector:: Read {}, {}'.format(result[0], result[1]))
-        break_test = 24930 if board == LDBoardTester.LD2100 else 40731
+        break_test = 24927 if board == LDBoardTester.LD2100 else 40731
         if result[0] != break_test and result[1] != break_test:
             _LOGGER.error('LDBoardTest::short_length_detector:: Break detector failed.')
             passing = False
@@ -303,16 +303,18 @@ class LDBoardTester(object):
         passing = [False for i in range(3)]
         while port < 3:
             # see that modbustest is still active
-            self.__serial.send_command(b'modbustest\r\n')
             # stage change to port
             self.__gpio.stage(GPIO.RS485, port)
             self.__gpio.commit()
+            sleep(.5)
             # three strikes and continue
             if strike == 3:
                 strike = 0
                 port += 1
                 continue
             # execute read
+            self.__serial.send_command(b'modbustest\r\n')
+
             modbus = serial_modbus.read_holding_registers(start, 1, slave)
             if not modbus:
                 strike += 1

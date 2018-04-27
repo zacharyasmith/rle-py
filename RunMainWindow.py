@@ -367,7 +367,7 @@ class SeaLionGUI(QMainWindow, Main.Ui_MainWindow):
         self.cancel = False
         self.thread_lock.release()
         for i in range(6):
-            if self.objects[i]['active'] and self.objects[i]['log_path']:
+            if self.objects[i]['log_path']:
                 self.set_info_btn_disabled(i, False)
         # TODO write results to file
 
@@ -396,7 +396,7 @@ class SeaLionGUI(QMainWindow, Main.Ui_MainWindow):
         # thatLine = thatLine.replace('\n', '<br />')
         path = self.objects[tray]['log_path']
         import subprocess
-        subprocess.run(['open', path])
+        subprocess.run(['leafpad', path])
         pass
 
 
