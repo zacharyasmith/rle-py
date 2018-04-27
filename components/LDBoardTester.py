@@ -14,6 +14,7 @@ from components.Exceptions import OperationsOutOfOrderException, TimeoutExceptio
 from components.ModBus import ModBus
 from components.Serial import Serial
 from components.GPIO import GPIO
+from components.ADC import read as adc_read, read_diff as adc_read_diff
 
 _LOGGER = logging.getLogger()
 
@@ -56,6 +57,49 @@ class LDBoardTester(object):
             exc_tb:
         """
         self.__serial.close()
+
+    def test_led(self, board: str) -> bool:
+        """
+        Tests the onboard LED
+
+        Args:
+            board: the board type
+
+        Returns:
+            Boolean success
+        """
+        _LOGGER.info('LDBoardTest::test_led:: Executing LED test.')
+        tolerance = 10 / 100    # percent
+        expected = .39 if board == LDBoardTester.LD5200 else .39
+        tolerance = tolerance * expected
+        val = adc_read(2, gain=2)
+        if not ((expected - tolerance) < val < (expected + tolerance)):
+            _LOGGER.info('LDBoardTest::test_led:: Not within tolerance.')
+            return False
+        return True
+
+    def output_current(self) -> bool:
+        """
+        Tests the onboard 4-10mA output (LD5200 only)
+
+        Returns:
+            Boolean success
+        """
+        _LOGGER.info('LDBoardTest::output_current:: Executing output current test.')
+        tolerance = 10 / 100    # percent
+        resistance = 100    # ohms
+        passing = True
+        for a in [4, 8, 12, 20, 0]:
+            _LOGGER.info('LDBoardTest::output_current:: Testing output current {} mA'.format(a))
+            self.__serial.send_command(b'dac ' + str(a).encode('ascii') + b'\r\n')
+            volts = a * 1e-3 * resistance
+            tol = tolerance * volts
+            val = adc_read_diff(2)
+            _LOGGER.info('LDBoardTest::output_current:: Expected {} V, Got {} V'.format(volts, val))
+            if not ((volts - tol) < val < (volts + tol)):
+                _LOGGER.error('LDBoardTest::output_current:: Not within tolerance'.format(a))
+                passing = False
+        return passing
 
     def configure_ip_address(self, ip_address: str) -> bool:
         """
@@ -243,6 +287,7 @@ class LDBoardTester(object):
         slave, start = 254, 9998
         # create modbus client
         serial_modbus = ModBus(device_file='/dev/rleRS485', timeout=1)
+        # quick test if is LD2100
         if board == self.LD2100:
             response = serial_modbus.read_holding_registers(start, 1, slave)
             if response:
@@ -291,6 +336,8 @@ class LDBoardTester(object):
             ok_match = re.search(r'ok', str(response))
             if ok_match:
                 self.__serial.send_command(b'modbustest\r\n')
+        # send ctrl-c to cancel just in case
+        self.__serial.send_command(b'\x03\r\n')
         self.__serial.reset_input_buffer()
         _LOGGER.info("LDBoardTest::test_modbus:: Results: {}".format(passing))
         return passing.count(False) == 0
