@@ -12,11 +12,11 @@ import Adafruit_ADS1x15
 # adc = Adafruit_ADS1x15.ADS1115()
 
 # Or create an ADS1015 ADC (12-bit) instance.
-adc = Adafruit_ADS1x15.ADS1015()
+#adc = Adafruit_ADS1x15.ADS1015()
 
 # Note you can change the I2C address from its default (0x48), and/or the I2C
 # bus by passing in these optional parameters:
-#adc = Adafruit_ADS1x15.ADS1015(address=0x49, busnum=1)
+adc = Adafruit_ADS1x15.ADS1015(address=0x48, busnum=1)
 
 # Choose a gain of 1 for reading voltages from 0 to 4.09V.
 # Or pick a different gain to change the range of voltages that are read:

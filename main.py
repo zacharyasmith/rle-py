@@ -33,8 +33,6 @@ if __name__ == "__main__":
     _BOARD0 = LD2100Tester(serial='LD2100_BOARD0', mac='00:25:96:FF:FE:12:34:57')
     _BOARD0.test(gpio, ip_address='10.0.0.189')
     print(_BOARD0.results())
-    # gpio.stage(GPIO.BOARD, state=3)
-    # gpio.commit()
     # _BOARD1 = LD5200Tester(serial='LD5200_BOARD1', mac='00:25:96:FF:FE:12:34:56')
     # _BOARD1.test(gpio, ip_address='10.0.0.188')
     # print(_BOARD1.results())

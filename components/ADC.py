@@ -32,11 +32,11 @@ if __name__ == "__main__":
         signal_min = 4095
         start = time.time()
         while time.time() - start < 0.5:
-            val = read(0, 2)
+            val = read(0, 1)
             if val > signal_max:
                 signal_max = val
             if val < signal_min:
                 signal_min = val
         pp = signal_max - signal_min
-        if signal_max > 1700:
+        if signal_max > 855:
             print("Max {}, Min {}, V {}".format(signal_max, signal_min, (pp * 3.3)/4095))

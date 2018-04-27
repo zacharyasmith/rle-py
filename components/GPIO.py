@@ -50,25 +50,25 @@ class GPIO(object):
     # Mapping: functions --> IO ports
 
     # Truth table
-    # A | B | C | Function
+    # C | B | A | Function
     # -------------------------
-    # 0   0   0   Tray 1 (LD2100)
-    # 0   0   1   Tray 2 (LD2100)
-    # 0   1   0   Tray 3 (LD2100)
-    # 0   1   1   Tray 4 (LD5200)
-    # 1   0   0   Tray 5 (LD5200)
-    # 1   0   1   Tray 6 (LD5200)
+    # 0   0   0   Tray 4 (LD5200)
+    # 0   0   1   Tray 5 (LD5200)
+    # 0   1   0   Tray 6 (LD5200)
+    # 0   1   1   Tray 1 (LD2100)
+    # 1   0   0   Tray 2 (LD2100)
+    # 1   0   1   Tray 3 (LD2100)
     # 1   1   0   Unused
     # 1   1   1   Unused
     __board_selector = {
-        #        A  B  C
+        #        C  B   A
         'pins': [7, 11, 12],
         'present_state': tuple(),
         'state': tuple()
     }
 
     # Truth table
-    # A | B | C | Function
+    # C | B | A | Function
     # -------------------------
     # 0   0   0   Short (0ft)
     # 0   0   1   Short (357ft)
@@ -79,14 +79,14 @@ class GPIO(object):
     # 1   1   0   Open for Loop1
     # 1   1   1   Open for Loop2
     __short_selector = {
-        #        A   B   C
+        #        C   B   A
         'pins': [13, 15, 16],
         'present_state': tuple(),
         'state': tuple()
     }
 
     # Truth table
-    # A | B | C | Function
+    # C | B | A | Function
     # -------------------------
     # 0   0   0   Length (0ft)
     # 0   0   1   Length (357ft)
@@ -97,14 +97,14 @@ class GPIO(object):
     # 1   1   0   Open for Loop1
     # 1   1   1   Open for Loop2
     __length_selector = {
-        #        A   B   C
+        #        C   B   A
         'pins': [18, 19, 21],
         'present_state': tuple(),
         'state': tuple()
     }
 
     # Truth table
-    # A | B | C | Function
+    # C | B | A | Function
     # -------------------------
     # 0   0   0   RS485 port #1
     # 0   0   1   RS485 port #2
@@ -115,7 +115,7 @@ class GPIO(object):
     # 1   1   0   Unused
     # 1   1   1   Unused
     __rs485_selector = {
-        #        A   B   C
+        #        C   B   A
         'pins': [22, 23, 24],
         'present_state': tuple(),
         'state': tuple()

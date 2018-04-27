@@ -38,16 +38,18 @@ class LD2100Tester(LDBoard):
             with LDBoardTester(gpio) as ld_board:
                 # rs232_connection implied by success with __enter__
                 self.process_test_result('rs232_connection', result=True)
-                self.process_test_result('datetime_set', ld_board.test_datetime_set())
-                self.process_test_result('startup_sequence', ld_board.test_startup_sequence(LDBoardTester.LD2100))
-                self.process_test_result('ps_voltage', ld_board.test_voltage())
-                self.process_test_result('rs485_modbus', ld_board.test_modbus(LDBoardTester.LD2100))
+                # self.process_test_result('datetime_set', ld_board.test_datetime_set())
+                # self.process_test_result('startup_sequence', ld_board.test_startup_sequence(LDBoardTester.LD2100))
+                # self.process_test_result('ps_voltage', ld_board.test_voltage())
+                self.process_test_result('length_detection', ld_board.test_length_detector(LDBoardTester.LD2100))
+                self.process_test_result('short_detection', ld_board.test_short_detector(LDBoardTester.LD2100))
+                # self.process_test_result('rs485_modbus', ld_board.test_modbus(LDBoardTester.LD2100))
                 # self.process_test_result('ethernet_ping',
                 #                          ld_board.test_ethernet(ip_address,
                 #                                                 configure_ip_address=True))
-                _LOGGER.info('Sleeping for 3 seconds...')
-                sleep(3)
-                self.process_test_result('datetime_read', ld_board.test_datetime_read())
+                # _LOGGER.info('Sleeping for 3 seconds...')
+                # sleep(3)
+                # self.process_test_result('datetime_read', ld_board.test_datetime_read())
         except ConnectionRefusalException:
                 _LOGGER.error("RS232 connection refused.")
                 self.process_test_result('rs232_connection', False)

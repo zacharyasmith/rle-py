@@ -135,27 +135,34 @@ class LDBoardTester(object):
         if not match_leak:
             return False
         leak = match_leak.group(1)
-        return (int(leg1), int(leg2), int(leak))
+        return int(leg1), int(leg2), int(leak)
 
-    def test_length_detector(self) -> bool:
+    def test_length_detector(self, board: str) -> bool:
         """
         Test utilizing length emulator.
+
+        Args:
+            board: board type selector
 
         Returns:
              Boolean success
         """
         _LOGGER.info('LDBoardTest::test_length_detector:: Executing length detector test.')
-        sel = 1
+        sel = 0
         tolerance = 5 / 100  # percent
         passing = True
         # Disengaging short emulator
-        self.__gpio.stage(GPIO.SHORT_EMULATOR, 6)
+        self.__gpio.stage(GPIO.SHORT_EMULATOR, 0)
         self.__gpio.commit()
-        for r in [1500, 7100, 14600, 22100, 29600]:    # selected with truth table values
+        test_values = [0, 1500, 7100] if board == LDBoardTester.LD2100 else [0, 1500, 7100, 14778, 22067, 29502]
+        for r in test_values:    # selected with truth table values
             self.__gpio.stage(GPIO.LENGTH_EMULATOR, sel)
             self.__gpio.commit()
             _LOGGER.info('LDBoardTest::test_length_detector:: Expecting {} ohms'.format(r))
             result = self.__adc_read()
+            if not result:
+                _LOGGER.error('LDBoardTest::test_length_detector:: Issue getting leak cable results.')
+                return False
             _LOGGER.info('LDBoardTest::test_length_detector:: Read {} and {} ohms'.format(result[0], result[1]))
             range = r * tolerance
             if (r - range) > result[0] or (r + range) < result[0]:
@@ -166,48 +173,56 @@ class LDBoardTester(object):
                 passing = False
             # next GPIO configuration
             sel += 1
-        if not result:
-            _LOGGER.error('LDBoardTest::test_length_detector:: Issue getting leak cable results.')
-            return False
+        # Disengaging short emulator
+        self.__gpio.stage(GPIO.LENGTH_EMULATOR, 7)
+        self.__gpio.commit()
         return passing
 
-    def test_short_detector(self) -> bool:
+    def test_short_detector(self, board: str) -> bool:
         """
         Test utilizing cable short emulator.
+
+        Args:
+            board: board selector
 
         Returns:
              Boolean success
         """
         _LOGGER.info('LDBoardTest::short_length_detector:: Executing short detector test.')
-        sel = 0
+        sel = 2 if board == LDBoardTester.LD2100 else 0
         tolerance = 5 / 100  # percent
         passing = True
         # Disengaging length emulator
         self.__gpio.stage(GPIO.LENGTH_EMULATOR, 6)
         self.__gpio.commit()
-        for r in [0, 1500, 7100, 14600, 22100, 29600]:    # selected with truth table values
+        test_values = [14557, 7061, 1468, 0] if board == LDBoardTester.LD2100 else [29459, 21982, 14557, 7061, 1468, 0]
+        for r in test_values:    # selected with truth table values
             self.__gpio.stage(GPIO.SHORT_EMULATOR, sel)
             self.__gpio.commit()
             _LOGGER.info('LDBoardTest::short_length_detector:: Expecting {} ohms'.format(r))
             result = self.__adc_read()
+            if not result:
+                _LOGGER.error('LDBoardTest::short_length_detector:: Issue getting short cable results.')
+                return False
             _LOGGER.info('LDBoardTest::short_lengh_detector:: Read {} ohms'.format(result[2]))
             range = r * tolerance
             if (r - range) > result[2] or (r + range) < result[2]:
-                if not (r == 0 and result[2] < 15):
+                if not (r == 0 and result[2] < 5):
                     _LOGGER.error('LDBoardTest::short_length_detector:: Leak detector not within tolerance.')
                     passing = False
             # next GPIO configuration
             sel += 1
         # break test
-        # TODO confirm results
         self.__gpio.stage(GPIO.LENGTH_EMULATOR, 7)
-        self.__gpio.stage(GPIO.SHORT_EMULATOR, 6)
+        self.__gpio.stage(GPIO.SHORT_EMULATOR, 7)
         self.__gpio.commit()
         result = self.__adc_read()
-        _LOGGER.info('LDBoardTest::short_lengh_detector:: Read {}, {}, {}'.format(result[0], result[1], result[2]))
-        if not result:
-            _LOGGER.error('LDBoardTest::short_length_detector:: Issue getting short cable results.')
-            return False
+        _LOGGER.info('LDBoardTest::short_length_detector:: Executing break test.')
+        _LOGGER.info('LDBoardTest::short_length_detector:: Read {}, {}'.format(result[0], result[1]))
+        break_test = 24930 if board == LDBoardTester.LD2100 else 40731
+        if result[0] != break_test and result[1] != break_test:
+            _LOGGER.error('LDBoardTest::short_length_detector:: Break detector failed.')
+            passing = False
         return passing
 
     LD2100 = "LD2100"
