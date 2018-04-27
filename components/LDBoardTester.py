@@ -9,6 +9,7 @@ import logging
 import re
 import signal
 import subprocess
+from time import sleep
 
 from components.Exceptions import OperationsOutOfOrderException, TimeoutException
 from components.ModBus import ModBus
@@ -32,13 +33,15 @@ class LDBoardTester(object):
     """
     __serial = None
     __date_set = None
+    LD2100 = "LD2100"
+    LD5200 = "LD5200"
+    ip_addresses = ['10.0.0.188', '10.0.0.189', '10.0.0.190', '10.0.0.191', '10.0.0.192', '10.0.0.193']
 
     def __init__(self, gpio: GPIO):
         """
         Constructor
         """
         self.__gpio = gpio
-        self.__serial = Serial('/dev/rleRS232')
 
     def __enter__(self):
         """
@@ -46,6 +49,7 @@ class LDBoardTester(object):
         Returns:
             self
         """
+        self.__serial = Serial('/dev/rleRS232')
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
@@ -57,6 +61,16 @@ class LDBoardTester(object):
             exc_tb:
         """
         self.__serial.close()
+
+    def connect_serial(self, mac=None) -> bool:
+        _LOGGER.info('LDBoardTest::connect_serial:: Connecting RS232.')
+        self.__serial = Serial('/dev/rleRS232')
+        if mac:
+            _LOGGER.info('LDBoardTest::connect_serial:: Writing MAC address {} (failure raises exception)'.format(mac))
+            self.__serial.send_command(bytes(mac + '\r\n', 'utf-8'))
+            sleep(7)
+            self.__serial._verify_connection(7)
+
 
     def test_led(self, board: str) -> bool:
         """
@@ -234,7 +248,7 @@ class LDBoardTester(object):
         """
         _LOGGER.info('LDBoardTest::short_length_detector:: Executing short detector test.')
         sel = 2 if board == LDBoardTester.LD2100 else 0
-        tolerance = 5 / 100  # percent
+        tolerance = 10 / 100  # percent
         passing = True
         # Disengaging length emulator
         self.__gpio.stage(GPIO.LENGTH_EMULATOR, 6)
@@ -268,9 +282,6 @@ class LDBoardTester(object):
             _LOGGER.error('LDBoardTest::short_length_detector:: Break detector failed.')
             passing = False
         return passing
-
-    LD2100 = "LD2100"
-    LD5200 = "LD5200"
 
     def test_modbus(self, board) -> bool:
         """

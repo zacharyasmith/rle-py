@@ -14,7 +14,7 @@ class LDBoard(object):
     """
     LDBoard class for representing a Lead Detection board by RLE Technologies.
     """
-    def __init__(self, serial_address, mac_address):
+    def __init__(self, serial_address, mac_address, name, type):
         """
         Constructor.
         """
@@ -22,6 +22,8 @@ class LDBoard(object):
         self.test_status = OrderedDict()
         self.serial_address = serial_address
         self.mac_address = mac_address
+        self.name = name
+        self.type = type
 
     def results(self):
         """
