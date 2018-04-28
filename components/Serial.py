@@ -83,7 +83,7 @@ class Serial(object):
         self.__conn.reset_output_buffer()
         sleep(.5)
 
-    def read_stop(self, command, regex=r'', timeout=5):
+    def read_stop(self, command, regex: str, timeout=5):
         """
         Sends command to board. Returns content until stop string satisfied or timeout (s).
         Raises ConnectionRefusalException. Returns byte array of ASCII chars response.

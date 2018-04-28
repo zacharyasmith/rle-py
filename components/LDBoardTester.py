@@ -495,36 +495,32 @@ class LDBoardTester(object):
             raise OperationsOutOfOrderException
         _LOGGER.info("LDBoardTester::test_datetime_read:: Testing datetime reading.")
         now = datetime.datetime.now()
-        self.__serial.send_command(b'time\n')
+        result =  self.__serial.read_stop(b'time\n', r'(\d{2}/\d{2}/\d{2})\s+(\d{2}:\d{2}:\d{2})')
         count = 0
-        while count < 2:
-            result = self.__serial.read_line()
-            # regex: 01/01/17 12:00:00
-            match = re.search(r'(\d{2}/\d{2}/\d{2})\s+(\d{2}:\d{2}:\d{2})', str(result))
-            if match:
-                time, date = match.group(1), match.group(2)
-                _LOGGER.info("LDBoardTester::test_datetime_read:: Read datetime as {} {}"
-                             .format(date, time))
-                _LOGGER.info("LDBoardTester::test_datetime_read:: Current datetime is {}"
-                             .format(datetime.datetime.now().strftime("%m/%d/%y %H:%M:%S")))
-                # parse datetime
-                dt = datetime.datetime.strptime("{} {}".format(date, time), "%H:%M:%S %m/%d/%y")
-                elapsed = dt - now
-                _LOGGER.info("LDBoardTester::test_datetime_read:: Time delta is {} sec"
-                             .format(abs(elapsed.total_seconds())))
-                # seconds allowed to be off by
-                allowance = 5
-                if abs(elapsed.total_seconds()) >= allowance:
-                    _LOGGER.info("LDBoardTester::test_datetime_read:: Failure. Time difference is "
-                                 "greater than {} seconds.".format(allowance))
-                    return False
-                # else
-                _LOGGER.info("LDBoardTester::test_datetime_read:: Passed. Delta <= {} sec"
-                             .format(allowance))
-                return True
-            else:
-                count += 1
-        _LOGGER.info("LDBoardTester::test_datetime_read:: Expecting "
-                     "(\d{{2}}/\d{{2}}/\d{{2}})\s+(\d{{2}}:\d{{2}}:\d{{2}}) got {}"
+        # regex: 01/01/17 12:00:00
+        match = re.search(r'(\d{2}/\d{2}/\d{2})\s+(\d{2}:\d{2}:\d{2})', str(result))
+        if match:
+            time, date = match.group(1), match.group(2)
+            _LOGGER.info("LDBoardTester::test_datetime_read:: Read datetime as {} {}"
+                         .format(date, time))
+            _LOGGER.info("LDBoardTester::test_datetime_read:: Current datetime is {}"
+                         .format(datetime.datetime.now().strftime("%m/%d/%y %H:%M:%S")))
+            # parse datetime
+            dt = datetime.datetime.strptime("{} {}".format(date, time), "%H:%M:%S %m/%d/%y")
+            elapsed = dt - now
+            _LOGGER.info("LDBoardTester::test_datetime_read:: Time delta is {} sec"
+                         .format(abs(elapsed.total_seconds())))
+            # seconds allowed to be off by
+            allowance = 5
+            if abs(elapsed.total_seconds()) >= allowance:
+                _LOGGER.info("LDBoardTester::test_datetime_read:: Failure. Time difference is "
+                             "greater than {} seconds.".format(allowance))
+                return False
+            # else
+            _LOGGER.info("LDBoardTester::test_datetime_read:: Passed. Delta <= {} sec"
+                         .format(allowance))
+            return True
+        _LOGGER.error("LDBoardTester::test_datetime_read:: Expecting form "
+                     "(\d{{2}}/\d{{2}}/\d{{2}})\s+(\d{{2}}:\d{{2}}:\d{{2}})"
                      .format(str(result)))
         return False
