@@ -60,11 +60,16 @@ def read(pin, gain=1):
         Float value
     """
     adc = Adafruit_ADS1x15.ADS1015()
-    val = adc.read_adc(pin, gain)
-    _LOGGER.debug('ADC::read:: ({},{}) Read {}'.format(pin, gain, val))
-    val = translate(val, gain)
-    _LOGGER.debug('ADC::read:: Translated to {}'.format(val))
-    return val
+    val = 0
+    translated = 0
+    for i in range(10):
+        raw = adc.read_adc(pin, gain)
+        val += raw
+        translated += translate(raw, gain)
+    val = val / 10
+    translated = translated / 10
+    _LOGGER.debug('ADC::read:: Pin {}; Raw {}; Translated (gain {}) {} V'.format(pin, val, gain, translated))
+    return translated
 
 
 def read_diff(gain=1):
@@ -78,11 +83,16 @@ def read_diff(gain=1):
         Float value
     """
     adc = Adafruit_ADS1x15.ADS1015()
-    val = adc.read_adc_difference(0, gain=gain)
-    _LOGGER.debug('ADC::read_diff:: ({}) Read {}'.format(gain, val))
-    val = translate(val, gain)
-    _LOGGER.debug('ADC::read_diff:: Translated to {}'.format(val))
-    return val
+    translated = 0
+    val = 0
+    for i in range(10):
+        raw = adc.read_adc_difference(0, gain=gain)
+        val += raw
+        translated += translate(raw, gain)
+    translated = translated / 10
+    val = val / 10
+    _LOGGER.debug('ADC::read_diff:: Raw {}; Translated (gain {}) {} V'.format(val, gain, translated))
+    return translated
 
 
 if __name__ == "__main__":
