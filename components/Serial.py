@@ -47,8 +47,8 @@ class Serial(object):
         Resets the buffer to empty.
         """
         _LOGGER.debug('Serial::reset_input_buffer:: Flushing input buffer.')
-        self.__conn.reset_input_buffer()
-        sleep(.5)
+        self.__conn.flushInput()
+        sleep(.1)
 
     def read_line(self, timeout=0.5):
         """
