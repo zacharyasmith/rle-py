@@ -64,6 +64,69 @@ class LDBoardTester(object):
             self.__serial._verify_connection(7)
         return True
 
+    def _relay_helper(self, cmd: tuple, expected: tuple, what='all') -> bool:
+        for c in cmd:
+            self.__serial.read_stop(c, r'ok')
+            sleep(.1)
+        val = self.__gpio.read(what)
+        _LOGGER.info('LDBoardTest::_relay_helper:: Issue {}; exp {}; rcv {}'
+                      .format(cmd, expected, val))
+        return expected == val
+
+    def test_relay(self, board: str) -> bool:
+        """
+        Tests the onboard relays
+
+        Args:
+            board: the board type
+
+        Returns:
+            Boolean success
+        """
+        _LOGGER.info('LDBoardTest::test_relay:: Executing relay test.')
+        passing = True
+        if board == LDBoardTester.LD2100:
+            # I0 connected to NC
+            # I1 connected to NO
+            # LD2100 tested by confirming switchin
+            if not self._relay_helper((b'rly1on\n',), (0, 1), 'first2'):
+                _LOGGER.error('LDBoardTest::test_relay:: LD2100 on state failed.')
+                passing = False
+            if not self._relay_helper((b'rly1off\n',), (1, 0), 'first2'):
+                _LOGGER.error('LDBoardTest::test_relay:: LD2100 off state failed.')
+                passing = False
+        else:
+            if not self._relay_helper((b'rly6off\n', b'rly4off\n', b'rly5off\n'), (1, 1, 0, 0)):
+                _LOGGER.error('LDBoardTest::test_relay:: Some NO has issues disconnecting.')
+                passing = False
+            if not self._relay_helper((b'rly5on\n',), (1, 0), 'last2'):
+                _LOGGER.error('LDBoardTest::test_relay:: Relay #1 (5) cannot engage.')
+                passing = False
+            if not self._relay_helper((b'rly4on\n', b'rly5off\n'), (1, 1), 'last2'):
+                _LOGGER.error('LDBoardTest::test_relay:: Relay #2 (4) cannot engage.')
+                passing = False
+            if not self._relay_helper((b'rly6on\n', b'rly4off\n'), (1, 1), 'last2'):
+                _LOGGER.error('LDBoardTest::test_relay:: Relay #3 (6) cannot engage.')
+                passing = False
+            if not self._relay_helper((b'rly4on\n', b'rly5on\n'), (0, 0, 1, 1)):
+                _LOGGER.error('LDBoardTest::test_relay:: Some NC has issues disconnecting.')
+                passing = False
+            if not self._relay_helper((b'rly5off\n',), (1, 0), 'first2'):
+                _LOGGER.error('LDBoardTest::test_relay:: Relay #1 (5) cannot disengage.')
+                passing = False
+            if not self._relay_helper((b'rly4off\n', b'rly5on\n'), (1, 1), 'first2'):
+                _LOGGER.error('LDBoardTest::test_relay:: Relay #2 (4) cannot disengage.')
+                passing = False
+            if not self._relay_helper((b'rly6off\n', b'rly4on\n'), (1, 1), 'first2'):
+                _LOGGER.error('LDBoardTest::test_relay:: Relay #3 (6) cannot disengage.')
+                passing = False
+            # final disengages
+            if not self._relay_helper((b'rly6off\n', b'rly4off\n', b'rly5off\n'), (1, 1, 0, 0)):
+                _LOGGER.error('LDBoardTest::test_relay:: Some NO has issues disconnecting. (2)')
+                passing = False
+        return passing
+
+
     def test_led(self, board: str) -> bool:
         """
         Tests the onboard LED

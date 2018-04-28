@@ -120,7 +120,7 @@ class SeaLionThread(QRunnable):
                 gpio.commit()
 
             # Setup progress bar
-            curr['tests_total'] = 12 if curr['board_type'] == LDBoardTester.LD5200 else 11
+            curr['tests_total'] = 13 if curr['board_type'] == LDBoardTester.LD5200 else 12
             curr['tests_finished'] = 0
 
             curr['passing'] = True
@@ -193,6 +193,22 @@ class SeaLionThread(QRunnable):
                 curr['tests_finished'] += 1
                 curr['passing'] = curr['passing'] and result
                 self.signals.update.emit((i, "Done: Voltage level check"))
+
+                # check for signals
+                if self.__check_signals(i):
+                    return
+
+                # relay test
+                self.signals.debug_update.emit((i, "Running: Relay test"))
+                if not gui.debug:
+                    result = ld_board.test_relay(curr['board_type'])
+                else:
+                    result = True
+                    sleep(2)
+                test_container.process_test_result('relay_test', result)
+                curr['tests_finished'] += 1
+                curr['passing'] = curr['passing'] and result
+                self.signals.update.emit((i, "Done: Relay test"))
 
                 # check for signals
                 if self.__check_signals(i):

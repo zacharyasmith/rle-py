@@ -56,6 +56,8 @@ class LD5200Tester(LDBoard):
                 if args['eth']or all:
                     self.process_test_result('ethernet_ping',
                                              ld_board.test_ethernet(ip_address, configure_ip_address=True))
+                if args['relay']:
+                    self.process_test_result('relay_test', ld_board.test_relay(LDBoardTester.LD5200))
                 if args['current']:
                     self.process_test_result('output_current', ld_board.output_current())
             if args['led'] or all:

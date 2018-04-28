@@ -125,9 +125,9 @@ class GPIO(object):
 
     # Inputs for Relay Test
     # Mapping
-    # TODO
     _relays = {
-        'pins': [26, 27, 28, 29],
+        #        I0  I1  I2  I3
+        'pins': [35, 36, 37, 38],
         'last_known': tuple()
     }
 
@@ -145,6 +145,7 @@ class GPIO(object):
         self.__channel_list.extend(self.__rs485_selector['pins'])
         # set as outputs and low
         _gpio.setup(self.__channel_list, _gpio.OUT)
+        _gpio.setup(self._relays['pins'], _gpio.IN)
         _gpio.output(self.__channel_list, _gpio.LOW)
 
     def __del__(self):
@@ -198,6 +199,37 @@ class GPIO(object):
         sleep(50 / 1000)    # sleep for 50 ms to let digital circuits settle
         _LOGGER.debug('GPIO::commit:: Done.')
 
+    I0 = 'IO'
+    I1 = 'I1'
+    I2 = 'I2'
+    I3 = 'I3'
+    HIGH = _gpio.HIGH
+    LOW = _gpio.LOW
+    def read(self, what):
+        """
+        Read directly from the relay inputs I0-I3
+        If what == 'first2', a tuple will be returned (I0, I1)
+        If what == 'last2', a tuple will be returned (I2, I3)
+        If what == 'all', a tuple will be returned (I0, I1, I2, I3)
+        """
+        val0 = _gpio.input(self._relays['pins'][0])
+        val1 = _gpio.input(self._relays['pins'][1])
+        val2 = _gpio.input(self._relays['pins'][2])
+        val3 = _gpio.input(self._relays['pins'][3])
+        if what == self.I0:
+            return val0
+        elif what == self.I1:
+            return val1
+        elif what == self.I2:
+            return val2
+        elif what == self.I3:
+            return val3
+        if what == 'first2':
+            return (val0, val1)
+        elif what == 'last2':
+            return (val2, val3)
+        else:
+            return (val0, val1, val2, val3)
 
 if __name__ == "__main__":
     gpio = GPIO()

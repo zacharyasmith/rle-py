@@ -45,6 +45,8 @@ class LD2100Tester(LDBoard):
                     self.process_test_result('startup_sequence', ld_board.test_startup_sequence())
                     self.process_test_result('ps_voltage', ld_board.test_voltage())
                     self.process_test_result('datetime_read', ld_board.test_datetime_read())
+                if args['relay']:
+                    self.process_test_result('relay_test', ld_board.test_relay(LDBoardTester.LD2100))
                 if args['length'] or all:
                     self.process_test_result('length_detection', ld_board.test_length_detector(LDBoardTester.LD2100))
                 if args['short'] or all:

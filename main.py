@@ -29,6 +29,7 @@ def start():
     parser.add_argument("--eth", help="Ethernet assignment test", action="store_true")
     parser.add_argument("--led", help="LED test", action="store_true")
     parser.add_argument("--current", help="4-20mA test (LD5200 only)", action="store_true")
+    parser.add_argument("--relay", help="Relay test", action="store_true")
     args = vars(parser.parse_args())
     if args['verbose']:
         if args['verbose'] >= 2:
