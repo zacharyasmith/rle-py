@@ -381,15 +381,6 @@ class SeaLionThread(QRunnable):
         for i in range(6):
             if not gui.objects[i]['active']:
                 continue
-            if not gui.objects[i]['ethernet_participate']:
-                continue
-            curr = gui.objects[i]
-            test_container = curr['test_container']
-
-            # check for signals
-            if self.__check_signals(i):
-                return
-
             # setup logging
             # writes to logging directory with identifier
             for handler in logging.root.handlers[:]:
@@ -398,12 +389,26 @@ class SeaLionThread(QRunnable):
             logging.basicConfig(filename=path, filemode='a', level=logging.INFO,
                                 format=logging_format)
 
+            curr = gui.objects[i]
+            test_container = curr['test_container']
+
+            if not gui.objects[i]['ethernet_participate']:
+                _LOGGER.info(test_container.results())
+                continue
+
+            # check for signals
+            if self.__check_signals(i):
+                return
+
             ld_board = LDBoardTester(gpio)
             # ethernet test
             self.signals.debug_update.emit((i, "Running: Ethernet test"))
             if not gui.debug:
                 result = ld_board.test_ethernet(LDBoardTester.ip_addresses[i])
                 self.signals.debug_update.emit((i, "Running: Resetting IP to 10.0.0.188"))
+                gpio.stage(GPIO.BOARD, state=curr['GPIO_address'])
+                gpio.commit()
+                ld_board.connect_serial()
                 if not ld_board.configure_ip_address('10.0.0.188'):
                     self.signals.debug_update.emit((i, "Error with IP address assignment"))
                     sleep(3)
@@ -412,6 +417,7 @@ class SeaLionThread(QRunnable):
                 result = True
                 sleep(2)
             test_container.process_test_result('ethernet_test', result)
+            _LOGGER.info(test_container.results())
             curr['tests_finished'] += 1
             curr['passing'] = curr['passing'] and result
             self.signals.update.emit((i, "Done: Ethernet test"))

@@ -225,7 +225,7 @@ class SeaLionGUI(QMainWindow, Main.Ui_MainWindow):
         self.thread_lock.release()
 
     def __prompt_mac_address(self, attempt: str, tray: str) -> tuple:
-        match = re.match(r'([0-9A-F]{2}:){5}([0-9A-F]{2})', attempt)
+        match = re.match(r'^([0-9A-F]{2}:){5}([0-9A-F]{2})$', attempt)
         if not match:
             msg_box = QMessageBox(self)
             msg_box.setText("Type MAC address correctly. ex. 12:34:56:AB:CD:EF")
