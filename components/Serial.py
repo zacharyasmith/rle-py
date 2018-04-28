@@ -37,8 +37,8 @@ class Serial(object):
         self._verify_connection()
         self.__timeout_start = None # type: datetime
     
-    def _check_timeout(self, timeout):
-        difference = datetime.now() - self.__timeout_start  # type: timedelta
+    def _check_timeout(self, timeout, timeout_start):
+        difference = datetime.now() - timeout_start  # type: timedelta
         if difference.total_seconds() >= timeout:
             raise TimeoutException()
 
@@ -50,7 +50,7 @@ class Serial(object):
         self.__conn.reset_input_buffer()
         sleep(.5)
 
-    def read_line(self, timeout=5):
+    def read_line(self, timeout=0.5):
         """
         Read line and return char array
         Read line and return char array
@@ -59,11 +59,11 @@ class Serial(object):
             Byte string of chars
         """
         # Initialize timeout
-        self.__timeout_start = datetime.now()
+        timeout_start = datetime.now()
         ret_val = b''
         try:
             while ret_val[-1:] != b'\n' or ret_val[-1:] is None:
-                self._check_timeout(timeout)
+                self._check_timeout(timeout, timeout_start)
                 if self.__conn.inWaiting() > 0:
                     ret_val += self.__conn.read()
         except TimeoutException:
@@ -105,11 +105,11 @@ class Serial(object):
         # return variable
         ret_val = b''
         # Initialize timeout
-        self.__timeout_start = datetime.now()
+        timeout_start = datetime.now()
         found = False
         try:
             while not found:
-                self._check_timeout(timeout)
+                self._check_timeout(timeout, timeout_start)
                 # grab response
                 line = self.read_line()
                 ret_val += line
@@ -117,6 +117,8 @@ class Serial(object):
                 found = _re.search(str(line))
         except TimeoutException:
             _LOGGER.debug("Serial::read_stop:: Timeout raised.")
+            if timeout != 5:
+                raise TimeoutException
         finally:
             self.reset_input_buffer()
         return ret_val
@@ -149,13 +151,15 @@ class Serial(object):
                      .format(self.__device_file))
         line = ''
         # Initialize timeout
-        self.__timeout_start = datetime.now()
+        timeout_start = datetime.now()
+        # clear input
+        self.__conn.reset_input_buffer()
         # init help function
         self.__conn.write(b'?\r\n')
         try:
             # last line of main menu in boot loader
             while line != b'run    - run the flash application\r\n':
-                self._check_timeout(timeout)
+                self._check_timeout(timeout, timeout_start)
                 line = self.read_line()
             # reset connection tries
             self.__conn_tries = 1
