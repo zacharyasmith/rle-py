@@ -1,3 +1,10 @@
+#!/usr/bin/env python3
+"""
+RunMainWindow.py
+
+Author:
+    Zachary Smith
+"""
 import sys
 
 import argparse
