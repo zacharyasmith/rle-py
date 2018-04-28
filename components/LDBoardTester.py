@@ -97,7 +97,7 @@ class LDBoardTester(object):
                 passing = False
         else:
             # test 1
-            if not self._relay_helper((b'rly6off\n', b'rly4off\n', b'rly5off\n'), ('x', 1, 'x', 0)):
+            if not self._relay_helper((b'rly6off\n', b'rly4off\n', b'rly5off\n'), ('x', 1, 'x', 1)):
                 _LOGGER.error('LDBoardTest::test_relay:: Error test 1')
                 passing = False
             # test 2

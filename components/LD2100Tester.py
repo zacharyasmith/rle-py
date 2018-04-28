@@ -45,8 +45,8 @@ class LD2100Tester(LDBoard):
                     self.process_test_result('startup_sequence', ld_board.test_startup_sequence())
                     self.process_test_result('ps_voltage', ld_board.test_voltage())
                     self.process_test_result('datetime_read', ld_board.test_datetime_read())
-                if args['relay']:
-                    self.process_test_result('relay_test', ld_board.test_relay(LDBoardTester.LD2100))
+                if args['relay'] or all:
+                    self.process_test_result('relay_test', ld_board.test_relay(LDBoardTester.LD2100, 'last2' if args['port'] == 4 else 'first2'))
                 if args['length'] or all:
                     self.process_test_result('length_detection', ld_board.test_length_detector(LDBoardTester.LD2100))
                 if args['short'] or all:
@@ -70,7 +70,7 @@ class LD2100Tester(LDBoard):
                 sleep(.1)
                 self.process_test_result('rs485_modbus', ld_board.test_modbus(LDBoardTester.LD2100))
             if args['led'] or all:
-                self.process_test_result('led_test', ld_board.test_led(LDBoardTester.LD2100))
+                self.process_test_result('led_test', ld_board.test_led())
         except ConnectionRefusalException:
                 _LOGGER.error("RS232 connection refused.")
                 self.process_test_result('rs232_connection', False)
