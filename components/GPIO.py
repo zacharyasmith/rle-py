@@ -127,8 +127,7 @@ class GPIO(object):
     # Mapping
     _relays = {
         #        I0  I1  I2  I3
-        'pins': [35, 36, 37, 38],
-        'last_known': tuple()
+        'pins': [35, 36, 37, 38]
     }
 
     def __init__(self):
