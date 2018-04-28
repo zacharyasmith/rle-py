@@ -1,5 +1,5 @@
 """
-view/Worker.py
+view/SeaLionThread.py
 
 Author:
     Zachary Smith
@@ -105,7 +105,7 @@ class SeaLionThread(QRunnable):
             for handler in logging.root.handlers[:]:
                 logging.root.removeHandler(handler)
             path = get_log_path(curr['identifier'])
-            logging.basicConfig(filename=path, filemode='a', level=logging.DEBUG,
+            logging.basicConfig(filename=path, filemode='a', level=logging.INFO,
                                 format=logging_format)
             curr['log_path'] = path
 
@@ -246,7 +246,7 @@ class SeaLionThread(QRunnable):
                         elif curr['GPIO_address'] == 5:
                             gpio.stage(GPIO.RS485, 0)
                             gpio.commit()
-                        sleep(1)
+                        sleep(.1)
                         result = ld_board.test_modbus(curr['board_type'])
                     else:
                         result = True
@@ -305,7 +305,7 @@ class SeaLionThread(QRunnable):
 
                 # LED test
                 self.signals.debug_update.emit((i, "Running: LED test"))
-                if gui.debug:
+                if not gui.debug:
                     result = ld_board.test_led(curr['board_type'])
                 else:
                     result = True
@@ -322,7 +322,7 @@ class SeaLionThread(QRunnable):
                         return
 
                     self.signals.debug_update.emit((i, "Running: Current source"))
-                    if gui.debug:
+                    if not gui.debug:
                         result = ld_board.output_current()
                     else:
                         result = True
@@ -335,7 +335,7 @@ class SeaLionThread(QRunnable):
                 self.signals.update.emit((i, "Waiting for others"))
             except ConnectionRefusalException:
                 _LOGGER.error("RS232 connection refused.")
-                self.process_test_result('rs232_connection', False)
+                test_container.process_test_result('rs232_connection', False)
                 curr['active'] = False
                 curr['passing'] = False
                 self.signals.update.emit((i, "RS232 connection issue"))
@@ -375,7 +375,7 @@ class SeaLionThread(QRunnable):
             for handler in logging.root.handlers[:]:
                 logging.root.removeHandler(handler)
             path = curr['log_path']
-            logging.basicConfig(filename=path, filemode='a', level=logging.DEBUG,
+            logging.basicConfig(filename=path, filemode='a', level=logging.INFO,
                                 format=logging_format)
 
             ld_board = LDBoardTester(gpio)
