@@ -59,7 +59,7 @@ class LDBoardTester(object):
         self.__serial = Serial('/dev/rleRS232')
         if self.__serial and mac:
             _LOGGER.info('LDBoardTest::connect_serial:: Writing MAC address {} (failure raises exception)'.format(mac))
-            self.__serial.send_command(bytes('mac ' + mac + '\r\n', 'utf-8'))
+            self.__serial.send_command(bytes('mac ' + mac + '\n', 'utf-8'))
             sleep(10)
             self.__serial._verify_connection(7)
         return True
@@ -75,11 +75,15 @@ class LDBoardTester(object):
             Boolean success
         """
         _LOGGER.info('LDBoardTest::test_led:: Executing LED test.')
+        # response = self.__serial.send_command(b'reset\n')
+        # sleep(3)
         tolerance = 10 / 100    # percent
         expected = .39 if board == LDBoardTester.LD5200 else .39
         tolerance = tolerance * expected
-        val = adc_read(2, gain=2)
-        if not ((expected - tolerance) < val < (expected + tolerance)):
+        val = adc_read(3, gain=2)
+        # sleep(14)
+        _LOGGER.info('LDBoardTest::test_led:: Read {} V.'.format(val))
+        if not ((expected - tolerance) <= val <= (expected + tolerance)):
             _LOGGER.info('LDBoardTest::test_led:: Not within tolerance.')
             return False
         return True
@@ -97,12 +101,12 @@ class LDBoardTester(object):
         passing = True
         for a in [4, 8, 12, 20, 0]:
             _LOGGER.info('LDBoardTest::output_current:: Testing output current {} mA'.format(a))
-            self.__serial.send_command(b'dac ' + str(a).encode('ascii') + b'\r\n')
+            self.__serial.send_command(b'dac ' + str(a).encode('ascii') + b'\n')
             volts = a * 1e-3 * resistance
             tol = tolerance * volts
             val = adc_read_diff(2)
             _LOGGER.info('LDBoardTest::output_current:: Expected {} V, Got {} V'.format(volts, val))
-            if not ((volts - tol) < val < (volts + tol)):
+            if not ((volts - tol) <= val <= (volts + tol)):
                 _LOGGER.error('LDBoardTest::output_current:: Not within tolerance'.format(a))
                 passing = False
         return passing
@@ -240,7 +244,7 @@ class LDBoardTester(object):
         """
         _LOGGER.info('LDBoardTest::short_length_detector:: Executing short detector test.')
         sel = 2 if board == LDBoardTester.LD2100 else 0
-        tolerance = 10 / 100  # percent
+        tolerance = 25 / 100  # percent
         passing = True
         # Disengaging length emulator
         self.__gpio.stage(GPIO.LENGTH_EMULATOR, 6)
@@ -258,7 +262,7 @@ class LDBoardTester(object):
             _LOGGER.info('LDBoardTest::short_lengh_detector:: Read {} ohms'.format(result[2]))
             range = r * tolerance
             if (r - range) > result[2] or (r + range) < result[2]:
-                if not (r == 0 and result[2] < 5):
+                if not (r == 0 and result[2] < 300):
                     _LOGGER.error('LDBoardTest::short_length_detector:: Leak detector not within tolerance.')
                     passing = False
             # next GPIO configuration
@@ -271,7 +275,7 @@ class LDBoardTester(object):
         _LOGGER.info('LDBoardTest::short_length_detector:: Executing break test.')
         _LOGGER.info('LDBoardTest::short_length_detector:: Read {}, {}'.format(result[0], result[1]))
         break_test = 24927 if board == LDBoardTester.LD2100 else 40731
-        if result[0] != break_test and result[1] != break_test:
+        if not (break_test - 20 <= result[0] <= break_test + 20) and (break_test - 20 <= result[1] <= break_test + 20):
             _LOGGER.error('LDBoardTest::short_length_detector:: Break detector failed.')
             passing = False
         return passing
@@ -297,51 +301,54 @@ class LDBoardTester(object):
             if response:
                 return response.registers[0] == 1234
             return False
+        # modbustest through serial port
+        self.__serial.send_command(b'modbustest\n')
         # listener
         port = 0
         strike = 0
-        passing = [False for i in range(3)]
-        while port < 3:
-            # see that modbustest is still active
-            # stage change to port
-            self.__gpio.stage(GPIO.RS485, port)
-            self.__gpio.commit()
-            sleep(.5)
-            # three strikes and continue
-            if strike == 3:
-                strike = 0
-                port += 1
-                continue
-            # execute read
-            self.__serial.send_command(b'modbustest\r\n')
-
-            modbus = serial_modbus.read_holding_registers(start, 1, slave)
-            if not modbus:
-                strike += 1
-                continue
-            # check response
-            success = False
-            if port == 0:
-                if modbus.registers[0] == 111:
-                    success = True
-                    passing[0] = True
-            elif port == 1:
-                if modbus.registers[0] == 222:
-                    success = True
-                    passing[1] = True
-            elif port == 2:
-                if modbus.registers[0] == 333:
-                    success = True
-                    passing[2] = True
-            if success:
-                port += 1
-            else:
-                strike += 1
-        # send ctrl-c to cancel just in case
-        self.__serial.send_command(b'\x03\r\n')
-        self.__serial.reset_input_buffer()
-        _LOGGER.info("LDBoardTest::test_modbus:: Results: {}".format(passing))
-        return passing.count(False) == 0
+        failing = 3
+        try:
+            while port < 3:
+                # see that modbustest is still active
+                # stage change to port
+                self.__gpio.stage(GPIO.RS485, port)
+                self.__gpio.commit()
+                sleep(.1)
+                # three strikes and continue
+                if strike == 3:
+                    strike = 0
+                    port += 1
+                    continue
+                # execute read
+                modbus = serial_modbus.read_holding_registers(start, 1, slave)
+                if not modbus:
+                    _LOGGER.debug('LDBoardTest::test_modbus:: Nothing returned from register read.')
+                    strike += 1
+                    continue
+                # check response
+                success = False
+                _LOGGER.debug('LDBoardTest::test_modbus:: Read {} for port {}.'.format(modbus.registers[0], port))
+                if port == 0:
+                    if modbus.registers[0] == 1111:
+                        success = True
+                elif port == 1:
+                    if modbus.registers[0] == 2222:
+                        success = True
+                elif port == 2:
+                    if modbus.registers[0] == 3333:
+                        success = True
+                if success:
+                    _LOGGER.info('LDBoardTest::test_modbus:: Communicated successfully with port {}'.format(port))
+                    port += 1
+                    failing -= 1
+                else:
+                    strike += 1
+        finally:
+            # send ctrl-c to cancel just in case
+            self.__serial.send_command(b'\x03\n')
+            self.__serial.reset_input_buffer()
+        _LOGGER.info("LDBoardTest::test_modbus:: Failed {} test(s)".format(failing))
+        return failing == 0
 
     def test_startup_sequence(self, board=LD5200):
         """
@@ -352,12 +359,12 @@ class LDBoardTester(object):
         """
         _LOGGER.info('LDBoardTester::test_startup_sequence:: Testing startup sequence.')
         _LOGGER.info('LDBoardTester::test_startup_sequence:: Sending `reset` command.')
-        response = self.__serial.read_stop(b'reset\r\n', r'User prgm is not valid', timeout=15)
+        try:
+            response = self.__serial.read_stop(b'reset\n', r'User prgm is not valid', timeout=20)
+        except TimeoutException:
+            _LOGGER.error('LDBoardTester::test_startup_sequence:: Did not reboot within timeout...')
+            return False
         if board == LDBoardTester.LD2100:
-            match_freq = re.search(r'(f\d:\s\d+hz\spass(\s\s)?){4}', str(response))
-            if not match_freq:
-                _LOGGER.info('LDBoardTester::test_startup_sequence:: Frequency check failed.')
-                return False
             return True
         match_mram = re.search(r'(?:Mram Test: )(\d+)(?://)(\d+)', str(response))
         if not match_mram:
@@ -385,8 +392,8 @@ class LDBoardTester(object):
         Test internal voltage is within allowed voltage range.
         """
         _LOGGER.info('LDBoardTester::test_voltage:: Testing 15v supply.')
-        response = self.__serial.read_stop(b'15v\r\n', regex=r'15V Supply:')
-        # 15V Supply: 15.1V\r\n
+        response = self.__serial.read_stop(b'15v\n', regex=r'15V Supply:')
+        # 15V Supply: 15.1V\n
         match = re.search(r'(?:15V Supply: )(\d+(?:\.\d+)?)', str(response))
         if match:
             voltage = float(match.group(1))
@@ -405,11 +412,11 @@ class LDBoardTester(object):
         # date 01/01/17
         date = b'date '
         date += bytearray(self.__date_set.strftime("%m/%d/%y"), 'utf8')
-        date += b'\r\n'
+        date += b'\n'
         # time 12:00:00
         time = b'time '
         time += bytearray(self.__date_set.strftime("%H:%M:%S"), 'utf8')
-        time += b'\r\n'
+        time += b'\n'
         _LOGGER.info("LDBoardTester::test_datetime_set:: Testing datetime setting.")
         self.__serial.read_stop(date, regex=r'ok')
         self.__serial.read_stop(time, regex=r'ok')
@@ -425,7 +432,7 @@ class LDBoardTester(object):
             raise OperationsOutOfOrderException
         _LOGGER.info("LDBoardTester::test_datetime_read:: Testing datetime reading.")
         now = datetime.datetime.now()
-        self.__serial.send_command(b'time\r\n')
+        self.__serial.send_command(b'time\n')
         count = 0
         while count < 2:
             result = self.__serial.read_line()
