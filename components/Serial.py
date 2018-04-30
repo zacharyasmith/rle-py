@@ -50,7 +50,7 @@ class Serial(object):
         self.__conn.reset_input_buffer()
         sleep(.5)
 
-    def read_line(self):
+    def read_line(self, timeout=5):
         """
         Read line and return char array
         Read line and return char array
@@ -58,9 +58,16 @@ class Serial(object):
         Returns:
             Byte string of chars
         """
+        # Initialize timeout
+        self.__timeout_start = datetime.now()
         ret_val = b''
-        while ret_val[-1:] != b'\n' or ret_val[-1:] is None:
-            ret_val += self.__conn.read()
+        try:
+            while ret_val[-1:] != b'\n' or ret_val[-1:] is None:
+                self._check_timeout(timeout)
+                if self.__conn.inWaiting() > 0:
+                    ret_val += self.__conn.read()
+        except TimeoutException:
+            _LOGGER.debug("Serial::read_line:: Timeout raised.")
         _LOGGER.debug('Serial::read_line:: Read line: {}'.format(str(ret_val)))
         return ret_val
 
