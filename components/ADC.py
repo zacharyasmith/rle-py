@@ -6,9 +6,13 @@ Author:
 """
 import logging
 import time
-import Adafruit_ADS1x15
 
 _LOGGER = logging.getLogger()
+
+try:
+    import Adafruit_ADS1x15
+except ModuleNotFoundError:
+    _LOGGER.error("Functionality will not work for ADC (I2C).")
 
 # 2/3 = +/-6.144V
 #   1 = +/-4.096V

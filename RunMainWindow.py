@@ -3,20 +3,19 @@ import sys
 from PyQt5.QtWidgets import QMainWindow, QApplication, QInputDialog, QErrorMessage, QMessageBox
 from PyQt5.QtCore import QThreadPool
 import re
-import threading
-from view.SeaLionThread import SeaLionThread, TimeUpdator
-import view.MainWindow as app
+from view.SeaLionThread import SeaLionThread, TimeUpdater
+import view.MainWindow as Main
 from components.LDBoardTester import LDBoardTester
 from datetime import datetime
 
 
-class SeaLionGUI(QMainWindow, app.Ui_MainWindow):
+class SeaLionGUI(QMainWindow, Main.Ui_MainWindow):
     def __init__(self, parent=None):
         super(SeaLionGUI, self).__init__(parent)
         self.setupUi(self)
 
-        # setup threadpool
-        self.threadpool = QThreadPool()
+        # setup thread pool
+        self.thread_pool = QThreadPool()
 
         self.objects = dict()
         for i in range(6):
@@ -160,13 +159,13 @@ class SeaLionGUI(QMainWindow, app.Ui_MainWindow):
             worker.signals.alert.connect(self._signal_alert)
             worker.signals.debug_update.connect(self._signal_debug_update)
             worker.signals.update.connect(self._signal_update)
-            self.threadpool.start(worker)
+            self.thread_pool.start(worker)
             # test started
             self.testing = True
             self.test_start = datetime.now()
-            time_thread = TimeUpdator(self)
+            time_thread = TimeUpdater(self)
             time_thread.signals.status_bar.connect(self._signal_status_bar)
-            self.threadpool.start(time_thread)
+            self.thread_pool.start(time_thread)
         else:
             self.reset_trays()
         self.resume_btn.setDisabled(False)
@@ -239,33 +238,33 @@ class SeaLionGUI(QMainWindow, app.Ui_MainWindow):
         else:
             self.objects[tray]['debug'].setText(text)
 
-    def set_cmd_btn_diabled(self, tray: int, set: bool) -> None:
+    def set_cmd_btn_diabled(self, tray: int, value: bool) -> None:
         """
-        Disables the command button or reenables
+        Disables the command button or re-enables
 
         :param tray: int selector. -1 for all
-        :param set: bool wether it disables or reenables
+        :param value: bool wether it disables or re-enables
         :return: None
         """
         if tray == -1:
             for i in range(6):
-                self.objects[i]['cmd_btn'].setDisabled(set)
+                self.objects[i]['cmd_btn'].setDisabled(value)
         else:
-            self.objects[tray]['cmd_btn'].setDisabled(set)
+            self.objects[tray]['cmd_btn'].setDisabled(value)
 
-    def set_info_btn_disabled(self, tray: int, set: bool) -> None:
+    def set_info_btn_disabled(self, tray: int, value: bool) -> None:
         """
-        Disables the info button or reenables
+        Disables the info button or re-enables
 
         :param tray: int selector. -1 for all
-        :param set: bool whether it disables or reenables
+        :param value: bool whether it disables or re-enables
         :return: None
         """
         if tray == -1:
             for i in range(6):
-                self.objects[i]['info_btn'].setDisabled(set)
+                self.objects[i]['info_btn'].setDisabled(value)
         else:
-            self.objects[tray]['info_btn'].setDisabled(set)
+            self.objects[tray]['info_btn'].setDisabled(value)
 
     def reset_trays(self) -> None:
         """
@@ -316,7 +315,6 @@ class SeaLionGUI(QMainWindow, app.Ui_MainWindow):
         self.set_info_btn_disabled(-1, False)
         self.testing = False
         # TODO write results to file
-
 
 
 def main() -> None:

@@ -168,7 +168,7 @@ class SeaLionThread(QRunnable):
                 curr['passing'] = curr['passing'] and result
                 self.signals.update.emit((i, "Done"))
 
-                # RS485 modbus
+                # RS485 ModBus
                 self.signals.debug_update.emit((i, "Running: Datetime read"))
                 result = ld_board.test_datetime_read()
                 # result = True
@@ -238,7 +238,6 @@ class SeaLionThread(QRunnable):
                 curr['passing'] = False
                 self.signals.update.emit((i, "I2C connection issue"))
 
-
         # conduct ethernet tests
         for i in range(6):
             if not gui.objects[i]['active']:
@@ -254,7 +253,8 @@ class SeaLionThread(QRunnable):
                 logging.root.removeHandler(handler)
             path = curr['log_path']
             logging.basicConfig(filename=path, filemode='a', level=logging.INFO,
-                                format='{} - %(levelname)s - %(message)s'.format(curr['identifier']))
+                                format='{} - %(levelname)s - %(message)s'
+                                .format(curr['identifier']))
 
             ld_board = LDBoardTester(gpio)
 
@@ -271,12 +271,12 @@ class SeaLionThread(QRunnable):
         self.signals.finished.emit()
 
 
-class TimeUpdator(QRunnable):
+class TimeUpdater(QRunnable):
     def __init__(self, gui_instance):
         """
         Constructor
         """
-        super(TimeUpdator, self).__init__()
+        super(TimeUpdater, self).__init__()
         self.signals = WorkerSignals()
         self.gui = gui_instance
 
@@ -286,6 +286,7 @@ class TimeUpdator(QRunnable):
             sleep(1)
             difference = datetime.now() - self.gui.test_start
             difference = divmod(difference.total_seconds(), 60)
-            self.signals.status_bar.emit('{} min {} sec'.format(int(difference[0]), int(difference[1])))
+            self.signals.status_bar.emit('{} min {} sec'.format(int(difference[0]),
+                                                                int(difference[1])))
 
 
