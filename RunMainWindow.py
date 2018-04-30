@@ -1,5 +1,6 @@
 import sys
 
+import argparse
 from PyQt5.QtWidgets import QMainWindow, QApplication, QInputDialog, QErrorMessage, QMessageBox
 from PyQt5.QtCore import QThreadPool
 import re
@@ -7,15 +8,24 @@ from view.SeaLionThread import SeaLionThread, TimeUpdater
 import view.MainWindow as Main
 from components.LDBoardTester import LDBoardTester
 from datetime import datetime
+import threading
 
 
 class SeaLionGUI(QMainWindow, Main.Ui_MainWindow):
-    def __init__(self, parent=None):
+    def __init__(self, parent=None, debug=False):
         super(SeaLionGUI, self).__init__(parent)
         self.setupUi(self)
 
+        # for signalling
+        self.debug = debug
+        self.pause = False
+        self.cancel = False
+        self.test_start = None
+        self.testing = False
+
         # setup thread pool
         self.thread_pool = QThreadPool()
+        self.thread_lock = threading.Lock()     # type: threading.Lock
 
         self.objects = dict()
         for i in range(6):
@@ -33,6 +43,7 @@ class SeaLionGUI(QMainWindow, Main.Ui_MainWindow):
         self.objects[0]['info_btn'] = self.tray1_info_btn
         self.objects[0]['board_label'] = self.tray1_board_label
         self.objects[0]['label'] = self.tray1_label
+        self.tray1_info_btn.clicked.connect(self.info_btn_handler_1)
 
         # LD2100 Tray 2 : GPIO address 4
         self.objects[1]['board_type'] = LDBoardTester.LD2100
@@ -45,6 +56,7 @@ class SeaLionGUI(QMainWindow, Main.Ui_MainWindow):
         self.objects[1]['info_btn'] = self.tray2_info_btn
         self.objects[1]['board_label'] = self.tray2_board_label
         self.objects[1]['label'] = self.tray2_label
+        self.tray2_info_btn.clicked.connect(self.info_btn_handler_2)
 
         # LD2100 Tray 3 : GPIO address 3
         self.objects[2]['board_type'] = LDBoardTester.LD2100
@@ -57,6 +69,7 @@ class SeaLionGUI(QMainWindow, Main.Ui_MainWindow):
         self.objects[2]['info_btn'] = self.tray3_info_btn
         self.objects[2]['board_label'] = self.tray3_board_label
         self.objects[2]['label'] = self.tray3_label
+        self.tray3_info_btn.clicked.connect(self.info_btn_handler_3)
 
         # LD5200 Tray 4 : GPIO address 0
         self.objects[3]['board_type'] = LDBoardTester.LD5200
@@ -69,6 +82,7 @@ class SeaLionGUI(QMainWindow, Main.Ui_MainWindow):
         self.objects[3]['info_btn'] = self.tray4_info_btn
         self.objects[3]['board_label'] = self.tray4_board_label
         self.objects[3]['label'] = self.tray4_label
+        self.tray4_info_btn.clicked.connect(self.info_btn_handler_4)
 
         # LD5200 Tray 5 : GPIO address 1
         self.objects[4]['board_type'] = LDBoardTester.LD5200
@@ -81,6 +95,7 @@ class SeaLionGUI(QMainWindow, Main.Ui_MainWindow):
         self.objects[4]['info_btn'] = self.tray5_info_btn
         self.objects[4]['board_label'] = self.tray5_board_label
         self.objects[4]['label'] = self.tray5_label
+        self.tray5_info_btn.clicked.connect(self.info_btn_handler_5)
 
         # LD5200 Tray 6 : GPIO address 2
         self.objects[5]['board_type'] = LDBoardTester.LD5200
@@ -93,14 +108,14 @@ class SeaLionGUI(QMainWindow, Main.Ui_MainWindow):
         self.objects[5]['info_btn'] = self.tray6_info_btn
         self.objects[5]['board_label'] = self.tray6_board_label
         self.objects[5]['label'] = self.tray6_label
+        self.tray6_info_btn.clicked.connect(self.info_btn_handler_6)
 
         self.reset_trays()
         self.pause_btn.setDisabled(True)
         self.cancel_btn.setDisabled(True)
         self.resume_btn.clicked.connect(self.start_btn_handler)
-
-        self.test_start = None
-        self.testing = False
+        self.pause_btn.clicked.connect(self.pause_btn_handler)
+        self.cancel_btn.clicked.connect(self.cancel_btn_handler)
 
     # create other constants
     INACTIVE = "#f2f2f2"
@@ -114,6 +129,9 @@ class SeaLionGUI(QMainWindow, Main.Ui_MainWindow):
         Will process each MAC/Serial combo and execute SeaLionThread when done.
         :return: None
         """
+        if self.testing:
+            self.resume_btn_handler()
+            return
         self.status_bar.showMessage("Starting...")
         self.resume_btn.setDisabled(True)
         self.update_progress(-1, 0, 1)
@@ -127,7 +145,8 @@ class SeaLionGUI(QMainWindow, Main.Ui_MainWindow):
                 proceed = False
                 break
             elif len(mac) > 0:
-                mac, ok = self.__prompt_mac_address(mac, board)
+                if not self.debug:
+                    mac, ok = self.__prompt_mac_address(mac, board)
                 if not ok:
                     proceed = False
                     break
@@ -153,6 +172,9 @@ class SeaLionGUI(QMainWindow, Main.Ui_MainWindow):
             # disable buttons
             self.set_cmd_btn_diabled(-1, True)
             self.set_info_btn_disabled(-1, True)
+            # enable pause/cancel
+            self.pause_btn.setDisabled(False)
+            self.cancel_btn.setDisabled(False)
             # starting the worker
             worker = SeaLionThread(self)
             worker.signals.finished.connect(self._signal_test_finished)
@@ -166,9 +188,34 @@ class SeaLionGUI(QMainWindow, Main.Ui_MainWindow):
             time_thread = TimeUpdater(self)
             time_thread.signals.status_bar.connect(self._signal_status_bar)
             self.thread_pool.start(time_thread)
+            return
         else:
             self.reset_trays()
         self.resume_btn.setDisabled(False)
+
+    def resume_btn_handler(self) -> None:
+        self.thread_lock.acquire()
+        print("Resume")
+        self.pause_btn.setDisabled(False)
+        self.resume_btn.setDisabled(True)
+        self.pause = False
+        self.thread_lock.release()
+
+    def pause_btn_handler(self) -> None:
+        self.thread_lock.acquire()
+        print("Pause")
+        self.pause_btn.setDisabled(True)
+        self.resume_btn.setDisabled(False)
+        self.cancel = False
+        self.pause = True
+        self.thread_lock.release()
+
+    def cancel_btn_handler(self) -> None:
+        self.thread_lock.acquire()
+        print("Cancel")
+        self.pause = False
+        self.cancel = True
+        self.thread_lock.release()
 
     def __prompt_mac_address(self, attempt: str, tray: str) -> tuple:
         match = re.match(r'([0-9A-F]{2}:){5}([0-9A-F]{2})', attempt)
@@ -308,21 +355,65 @@ class SeaLionGUI(QMainWindow, Main.Ui_MainWindow):
         """
         signaled from thread that all tests are completed
         """
+        self.thread_lock.acquire()
+        print("Finished")
         self.pause_btn.setDisabled(True)
         self.cancel_btn.setDisabled(True)
         self.resume_btn.setDisabled(False)
         self.set_cmd_btn_diabled(-1, False)
-        self.set_info_btn_disabled(-1, False)
+        self.set_info_btn_disabled(-1, True)
         self.testing = False
+        self.pause = False
+        self.cancel = False
+        self.thread_lock.release()
+        for i in range(6):
+            if self.objects[i]['active'] and self.objects[i]['log_path']:
+                self.set_info_btn_disabled(i, False)
         # TODO write results to file
 
+    """
+    Each of the info buttons have their own handler
+    """
+    def info_btn_handler_1(self) -> None:
+        self.info_btn_handler(0)
 
-def main() -> None:
+    def info_btn_handler_2(self) -> None:
+        self.info_btn_handler(1)
+
+    def info_btn_handler_3(self) -> None:
+        self.info_btn_handler(2)
+
+    def info_btn_handler_4(self) -> None:
+        self.info_btn_handler(3)
+
+    def info_btn_handler_5(self) -> None:
+        self.info_btn_handler(4)
+
+    def info_btn_handler_6(self) -> None:
+        self.info_btn_handler(5)
+
+    def info_btn_handler(self, tray: int) -> None:
+        # thatLine = thatLine.replace('\n', '<br />')
+        path = self.objects[tray]['log_path']
+        import subprocess
+        subprocess.run(['open', path])
+        pass
+
+
+def main(debug=False) -> None:
     app = QApplication(sys.argv)
-    window = SeaLionGUI()
+    window = SeaLionGUI(debug=debug)
     window.show()
     app.exec_()
 
 
 if __name__ == '__main__':
+    # argument parser
+    parser = argparse.ArgumentParser(description='RLE LD Board Tester.')
+    # verbosity
+    parser.add_argument('--debug', '-d', action="count",
+                        help='Counts number of `v`s in flag. More flags is more verbose.')
+    args = vars(parser.parse_args())
+    if args['debug']:
+        main(True)
     main()

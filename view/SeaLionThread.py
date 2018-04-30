@@ -48,6 +48,21 @@ class SeaLionThread(QRunnable):
         self.gui = gui_instance
         self.signals = WorkerSignals()
 
+    def __check_signals(self, tray: int) -> bool:
+        while self.gui.pause:
+            print('Pause ack')
+            self.signals.debug_update.emit((tray, "Paused"))
+            sleep(0.35)
+            self.signals.debug_update.emit((tray, ""))
+            sleep(0.35)
+            pass
+        if self.gui.cancel:
+            print('Cancel ack')
+            self.signals.debug_update.emit((tray, "Cancelled"))
+            self.signals.finished.emit()
+            return True
+        return False
+
     """
     Collection of items in gui.objects[i]:
         ['board_type'] = LDBoardTester.LD5200 | LDBoardTests.LD2100
@@ -66,12 +81,22 @@ class SeaLionThread(QRunnable):
     @pyqtSlot()
     def run(self):
         gui = self.gui
-        gpio = GPIO()
+        if not gui.debug:
+            gpio = GPIO()
+        else:
+            gpio = None
         for i in range(6):
+            # check for signals
+            if self.__check_signals(i):
+                return
+
+            # ensure object is active
             if not gui.objects[i]['active']:
+                gui.objects[i]['log_path'] = None
                 continue
             curr = gui.objects[i]
-            test_container = LDBoard(curr['serial'], curr['mac'], curr['identifier'], curr['board_type'])
+            test_container = LDBoard(curr['serial'], curr['mac'],
+                                     curr['identifier'], curr['board_type'])
             curr['test_container'] = test_container
 
             # setup logging
@@ -80,12 +105,18 @@ class SeaLionThread(QRunnable):
                 logging.root.removeHandler(handler)
             path = get_log_path(curr['identifier'])
             logging.basicConfig(filename=path, filemode='a', level=logging.DEBUG,
-                                format='{} - %(levelname)s - %(message)s'.format(curr['identifier']))
+                                format='%(levelname)s::%(message)s')
             curr['log_path'] = path
 
+            # Info log
+            _LOGGER.info('Board/tray: {}'.format(curr['identifier']))
+            _LOGGER.info('Serial number: {}'.format(curr['serial']))
+            _LOGGER.info('MAC address: {}'.format(curr['mac']))
+
             # GPIO
-            gpio.stage(GPIO.BOARD, state=curr['GPIO_address'])
-            gpio.commit()
+            if not gui.debug:
+                gpio.stage(GPIO.BOARD, state=curr['GPIO_address'])
+                gpio.commit()
 
             # Setup progress bar
             curr['tests_total'] = 12 if curr['board_type'] == LDBoardTester.LD5200 else 11
@@ -96,139 +127,210 @@ class SeaLionThread(QRunnable):
 
             ld_board = LDBoardTester(gpio)
             try:
+                # check for signals
+                if self.__check_signals(i):
+                    return
+
                 # serial connection
                 self.signals.debug_update.emit((i, "Writing MAC address"))
-                result = ld_board.connect_serial(curr['mac'])
-                # result = True
-                # sleep(2)
+                if not gui.debug:
+                    result = ld_board.connect_serial(curr['mac'])
+                else:
+                    result = True
+                    sleep(2)
                 test_container.process_test_result('rs232_connection', result)
                 curr['tests_finished'] += 1
                 curr['passing'] = curr['passing'] and result
-                self.signals.update.emit((i, "Done"))
+                self.signals.update.emit((i, "Done: Writing MAC address"))
                 if not result:
                     continue
 
+                # check for signals
+                if self.__check_signals(i):
+                    return
+
                 # datetime set
                 self.signals.debug_update.emit((i, "Running: Datetime write"))
-                result = ld_board.test_datetime_set()
-                # result = True
-                # sleep(2)
+                if not gui.debug:
+                    result = ld_board.test_datetime_set()
+                else:
+                    result = True
+                    sleep(2)
                 test_container.process_test_result('datetime_set', result)
                 curr['tests_finished'] += 1
                 curr['passing'] = curr['passing'] and result
-                self.signals.update.emit((i, "Done"))
+                self.signals.update.emit((i, "Done: Datetime write"))
+
+                # check for signals
+                if self.__check_signals(i):
+                    return
 
                 # startup sequence
                 self.signals.debug_update.emit((i, "Running: Startup sequence test"))
-                result = ld_board.test_startup_sequence(curr['board_type'])
-                # result = True
-                # sleep(2)
+                if not gui.debug:
+                    result = ld_board.test_startup_sequence(curr['board_type'])
+                else:
+                    result = True
+                    sleep(2)
                 test_container.process_test_result('startup_sequence', result)
                 curr['tests_finished'] += 1
                 curr['passing'] = curr['passing'] and result
-                self.signals.update.emit((i, "Done"))
+                self.signals.update.emit((i, "Done: Startup sequence test"))
+
+                # check for signals
+                if self.__check_signals(i):
+                    return
 
                 # power supply voltage
                 self.signals.debug_update.emit((i, "Running: Voltage level check"))
-                result = ld_board.test_voltage()
-                # result = True
-                # sleep(2)
+                if not gui.debug:
+                    result = ld_board.test_voltage()
+                else:
+                    result = True
+                    sleep(2)
                 test_container.process_test_result('ps_voltage', result)
                 curr['tests_finished'] += 1
                 curr['passing'] = curr['passing'] and result
-                self.signals.update.emit((i, "Done"))
+                self.signals.update.emit((i, "Done: Voltage level check"))
+
+                # check for signals
+                if self.__check_signals(i):
+                    return
 
                 # length emulator
                 self.signals.debug_update.emit((i, "Running: Cable emulator (length)"))
-                result = ld_board.test_length_detector(curr['board_type'])
-                # result = True
-                # sleep(2)
+                if not gui.debug:
+                    result = ld_board.test_length_detector(curr['board_type'])
+                else:
+                    result = True
+                    sleep(2)
                 test_container.process_test_result('length_detection', result)
                 curr['tests_finished'] += 1
                 curr['passing'] = curr['passing'] and result
-                self.signals.update.emit((i, "Done"))
+                self.signals.update.emit((i, "Done: Cable emulator (length)"))
+
+                # check for signals
+                if self.__check_signals(i):
+                    return
 
                 # short emulator
                 self.signals.debug_update.emit((i, "Running: Cable emulator (short)"))
-                result = ld_board.test_short_detector(curr['board_type'])
-                # result = True
-                # sleep(2)
+                if not gui.debug:
+                    result = ld_board.test_short_detector(curr['board_type'])
+                else:
+                    result = True
+                    sleep(2)
                 test_container.process_test_result('short_detection', result)
                 curr['tests_finished'] += 1
                 curr['passing'] = curr['passing'] and result
-                self.signals.update.emit((i, "Done"))
+                self.signals.update.emit((i, "Done: Cable emulator (short)"))
+
+                # check for signals
+                if self.__check_signals(i):
+                    return
 
                 # RS485 modbus
                 self.signals.debug_update.emit((i, "Running: RS485 ModBus"))
-                result = ld_board.test_modbus(curr['board_type'])
-                # result = True
-                # sleep(2)
+                if not gui.debug:
+                    result = ld_board.test_modbus(curr['board_type'])
+                else:
+                    result = True
+                    sleep(2)
                 test_container.process_test_result('rs485_modbus', result)
                 curr['tests_finished'] += 1
                 curr['passing'] = curr['passing'] and result
-                self.signals.update.emit((i, "Done"))
+                self.signals.update.emit((i, "Done: RS485 ModBus"))
+
+                # check for signals
+                if self.__check_signals(i):
+                    return
 
                 # RS485 ModBus
                 self.signals.debug_update.emit((i, "Running: Datetime read"))
-                result = ld_board.test_datetime_read()
-                # result = True
-                # sleep(2)
+                if not gui.debug:
+                    result = ld_board.test_datetime_read()
+                else:
+                    result = True
+                    sleep(2)
                 test_container.process_test_result('datetime_read', result)
                 curr['tests_finished'] += 1
                 curr['passing'] = curr['passing'] and result
-                self.signals.update.emit((i, "Done"))
+                self.signals.update.emit((i, "Done: Datetime read"))
+
+                # check for signals
+                if self.__check_signals(i):
+                    return
 
                 # write ip address
                 self.signals.debug_update.emit((i, "Assigned " + LDBoardTester.ip_addresses[i]))
-                result = ld_board.configure_ip_address(LDBoardTester.ip_addresses[i])
-                # result = True
-                # sleep(2)
+                if not gui.debug:
+                    result = ld_board.configure_ip_address(LDBoardTester.ip_addresses[i])
+                else:
+                    result = True
+                    sleep(2)
                 curr['tests_finished'] += 1
                 curr['ethernet_participate'] = result
                 curr['passing'] = curr['passing'] and result
-                self.signals.update.emit((i, "Waiting for others"))
+                self.signals.update.emit((i, "Done writing IP address"))
+
+                # check for signals
+                if self.__check_signals(i):
+                    return
 
                 # LED test
                 self.signals.debug_update.emit((i, "Running: LED test"))
-                result = ld_board.test_led(curr['board_type'])
+                if not gui.debug:
+                    result = ld_board.test_led(curr['board_type'])
+                else:
+                    result = True
+                    sleep(2)
                 test_container.process_test_result('led_test', result)
                 curr['tests_finished'] += 1
                 curr['passing'] = curr['passing'] and result
-                self.signals.update.emit((i, "Done"))
+                self.signals.update.emit((i, "Done: LED test"))
 
                 # 4-20 mA test
                 if curr['board_type'] == LDBoardTester.LD5200:
+                    # check for signals
+                    if self.__check_signals(i):
+                        return
+
                     self.signals.debug_update.emit((i, "Running: Current source"))
-                    result = ld_board.output_current()
-                    # result = True
-                    # sleep(2)
+                    if not gui.debug:
+                        result = ld_board.output_current()
+                    else:
+                        result = True
+                        sleep(2)
                     test_container.process_test_result('output_current', result)
                     curr['tests_finished'] += 1
                     curr['passing'] = curr['passing'] and result
-                    self.signals.update.emit((i, "Done"))
+                    self.signals.update.emit((i, "Done: Current source"))
 
+                self.signals.update.emit((i, "Waiting for others"))
             except ConnectionRefusalException:
                 _LOGGER.error("RS232 connection refused.")
                 self.process_test_result('rs232_connection', False)
                 curr['active'] = False
                 curr['passing'] = False
-                self.signals.update.emit((i, "Connection issue"))
+                self.signals.update.emit((i, "RS232 connection issue"))
             except ConnectionException as e:
                 if e.string:
                     _LOGGER.error(e.string)
                 _LOGGER.error('USB to RS485(ModBus) adapter failed to connect.')
-                self.signals.alert.emit(("USB/RS485 Connection Refused", "Check that no other processes are using it."))
+                self.signals.alert.emit(("USB/RS485 Connection Refused",
+                                         "Check that no other processes are using it."))
                 curr['active'] = False
                 curr['passing'] = False
-                self.signals.update.emit((i, "Connection issue"))
+                self.signals.update.emit((i, "RS485 connection issue"))
             except SerialException as e:
                 if e.strerror:
                     _LOGGER.error(e.strerror)
                 _LOGGER.error('USB to RS232 adapter failed to connect.')
-                self.signals.alert.emit(("USB/RS232 Connection Refused", "Check that no other processes are using it."))
+                self.signals.alert.emit(("USB/RS232 Connection Refused",
+                                         "Check that no other processes are using it."))
                 curr['active'] = False
                 curr['passing'] = False
-                self.signals.update.emit((i, "Connection issue"))
+                self.signals.update.emit((i, "RS232 connection issue"))
             except OSError as e:
                 if e.strerror:
                     _LOGGER.error(e.strerror)
@@ -247,24 +349,31 @@ class SeaLionThread(QRunnable):
             curr = gui.objects[i]
             test_container = curr['test_container']
 
+            # check for signals
+            if self.__check_signals(i):
+                return
+
             # setup logging
             # writes to logging directory with identifier
             for handler in logging.root.handlers[:]:
                 logging.root.removeHandler(handler)
             path = curr['log_path']
             logging.basicConfig(filename=path, filemode='a', level=logging.INFO,
-                                format='{} - %(levelname)s - %(message)s'
+                                format='{}::%(levelname)s::%(message)s'
                                 .format(curr['identifier']))
 
             ld_board = LDBoardTester(gpio)
-
             # ethernet test
             self.signals.debug_update.emit((i, "Running: Ethernet test"))
-            result = ld_board.test_ethernet(LDBoardTester.ip_addresses[i])
+            if not gui.debug:
+                result = ld_board.test_ethernet(LDBoardTester.ip_addresses[i])
+            else:
+                result = True
+                sleep(2)
             test_container.process_test_result('ethernet_test', result)
             curr['tests_finished'] += 1
             curr['passing'] = curr['passing'] and result
-            self.signals.update.emit((i, "Done"))
+            self.signals.update.emit((i, "Done: Ethernet test"))
 
         # signal to GUI
         # process finished
@@ -288,5 +397,7 @@ class TimeUpdater(QRunnable):
             difference = divmod(difference.total_seconds(), 60)
             self.signals.status_bar.emit('{} min {} sec'.format(int(difference[0]),
                                                                 int(difference[1])))
+        self.signals.status_bar.emit('Done: {} min {} sec'.format(int(difference[0]),
+                                                                  int(difference[1])))
 
 
