@@ -4,15 +4,23 @@ components/Serial.py
 Author:
     Zachary Smith
 """
+import signal
 import re
 import logging
 from time import sleep
-from datetime import datetime, timedelta
+from datetime import datetime
 
 import serial
 from components.Exceptions import TimeoutException, ConnectionRefusalException
 
 _LOGGER = logging.getLogger()
+
+
+def timeout_handler(arg1, arg2):
+    """
+    Used in alarm contexts.
+    """
+    raise TimeoutException('Timeout.')
 
 
 class Serial(object):
@@ -35,12 +43,6 @@ class Serial(object):
         self.__device_file = device_file
         self.__conn = serial.Serial(self.__device_file, timeout=10)
         self._verify_connection()
-        self.__timeout_start = None # type: datetime
-    
-    def _check_timeout(self, timeout):
-        difference = datetime.now() - self.__timeout_start  # type: timedelta
-        if difference.total_seconds() >= timeout:
-            raise TimeoutException()
 
     def reset_input_buffer(self):
         """
@@ -98,11 +100,12 @@ class Serial(object):
         # return variable
         ret_val = b''
         # Initialize timeout
-        self.__timeout_start = datetime.now()
+        signal.signal(signal.SIGALRM, timeout_handler)
+        # start timeout
+        signal.alarm(timeout)
         found = False
         try:
             while not found:
-                self._check_timeout(timeout)
                 # grab response
                 line = self.read_line()
                 ret_val += line
@@ -112,6 +115,7 @@ class Serial(object):
             _LOGGER.debug("Serial::read_stop:: Timeout raised.")
         finally:
             self.reset_input_buffer()
+            signal.alarm(0)
         return ret_val
 
     def open(self):
@@ -142,16 +146,18 @@ class Serial(object):
                      .format(self.__device_file))
         line = ''
         # Initialize timeout
-        self.__timeout_start = datetime.now()
+        signal.signal(signal.SIGALRM, timeout_handler)
+        # Start timeout
+        signal.alarm(timeout)
         # init help function
         self.__conn.write(b'?\r\n')
         try:
             # last line of main menu in boot loader
             while line != b'run    - run the flash application\r\n':
-                self._check_timeout(timeout)
                 line = self.read_line()
             # reset connection tries
             self.__conn_tries = 1
+            signal.alarm(0)
             _LOGGER.info('Serial::_verify_connection:: Connection succeeded.')
         except TimeoutException:
             self.__conn_tries += 1
