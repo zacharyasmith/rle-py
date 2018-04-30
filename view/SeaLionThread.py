@@ -81,6 +81,7 @@ class SeaLionThread(QRunnable):
     @pyqtSlot()
     def run(self):
         gui = self.gui
+        logging_format = '%(levelname)s::%(message)s'
         if not gui.debug:
             gpio = GPIO()
         else:
@@ -105,7 +106,7 @@ class SeaLionThread(QRunnable):
                 logging.root.removeHandler(handler)
             path = get_log_path(curr['identifier'])
             logging.basicConfig(filename=path, filemode='a', level=logging.DEBUG,
-                                format='%(levelname)s::%(message)s')
+                                format=logging_format)
             curr['log_path'] = path
 
             # Info log
@@ -359,8 +360,7 @@ class SeaLionThread(QRunnable):
                 logging.root.removeHandler(handler)
             path = curr['log_path']
             logging.basicConfig(filename=path, filemode='a', level=logging.INFO,
-                                format='{}::%(levelname)s::%(message)s'
-                                .format(curr['identifier']))
+                                format=logging_format)
 
             ld_board = LDBoardTester(gpio)
             # ethernet test
