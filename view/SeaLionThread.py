@@ -399,6 +399,11 @@ class SeaLionThread(QRunnable):
             self.signals.debug_update.emit((i, "Running: Ethernet test"))
             if not gui.debug:
                 result = ld_board.test_ethernet(LDBoardTester.ip_addresses[i])
+                self.signals.debug_update.emit((i, "Running: Resetting IP to 10.0.0.188"))
+                if not ld_board.configure_ip_address('10.0.0.188'):
+                    self.signals.debug_update.emit((i, "Error with IP address assignment"))
+                    sleep(3)
+                    curr['passing'] = False
             else:
                 result = True
                 sleep(2)
