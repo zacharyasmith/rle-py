@@ -282,11 +282,15 @@ class LDBoardTester(object):
             _LOGGER.info('LDBoardTest::test_length_detector:: Read {} and {} ohms'.format(result[0], result[1]))
             range = r * tolerance
             if (r - range) > result[0] or (r + range) < result[0]:
-                _LOGGER.error('LDBoardTest::test_length_detector:: Loop1 detector not within tolerance.')
-                passing = False
+                if not (r == 0 and result[0] < 10):
+                    _LOGGER.error('LDBoardTest::test_length_detector::'
+                                  'Loop1 detector not within tolerance.')
+                    passing = False
             if (r - range) > result[1] or (r + range) < result[1]:
-                _LOGGER.error('LDBoardTest::test_length_detector:: Loop2 detector not within tolerance.')
-                passing = False
+                if not (r == 0 and result[1] < 10):
+                    _LOGGER.error('LDBoardTest::test_length_detector::'
+                                  'Loop2 detector not within tolerance.')
+                    passing = False
             # next GPIO configuration
             sel += 1
         # Disengaging short emulator
@@ -306,7 +310,7 @@ class LDBoardTester(object):
         """
         _LOGGER.info('LDBoardTest::short_length_detector:: Executing short detector test.')
         sel = 2 if board == LDBoardTester.LD2100 else 0
-        tolerance = 25 / 100  # percent
+        tolerance = 10 / 100  # percent
         passing = True
         # Disengaging length emulator
         self.__gpio.stage(GPIO.LENGTH_EMULATOR, 6)
@@ -324,7 +328,7 @@ class LDBoardTester(object):
             _LOGGER.info('LDBoardTest::short_lengh_detector:: Read {} ohms'.format(result[2]))
             range = r * tolerance
             if (r - range) > result[2] or (r + range) < result[2]:
-                if not (r == 0 and result[2] < 300):
+                if not (r == 0 and result[2] < 10):
                     _LOGGER.error('LDBoardTest::short_length_detector:: Leak detector not within tolerance.')
                     passing = False
             # next GPIO configuration
