@@ -132,27 +132,21 @@ class LDBoardTester(object):
             self._relay_helper((b'rly6off\n', b'rly4off\n', b'rly5off\n'), ('x', 'x', 'x', 'x'))
         return passing
 
-    def test_led(self, board: str) -> bool:
+    def test_led(self) -> bool:
         """
-        Tests the onboard LED
-
-        Args:
-            board: the board type
+        Tests the on-board LED
 
         Returns:
             Boolean success
         """
         _LOGGER.info('LDBoardTest::test_led:: Executing LED test.')
-        # response = self.__serial.send_command(b'reset\n')
-        # sleep(3)
         tolerance = 10 / 100    # percent
-        expected = .39 if board == LDBoardTester.LD5200 else .39
+        expected = .225
         tolerance = tolerance * expected
         val = adc_read(3, gain=2)
-        # sleep(14)
         _LOGGER.info('LDBoardTest::test_led:: Read {} V.'.format(val))
-        if not ((expected - tolerance) <= val <= (expected + tolerance)):
-            _LOGGER.info('LDBoardTest::test_led:: Not within tolerance.')
+        if not ((expected - tolerance) <= val):
+            _LOGGER.info('LDBoardTest::test_led:: Not within tolerance. LED *might* not be working')
             return False
         return True
 
