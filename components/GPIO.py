@@ -127,8 +127,7 @@ class GPIO(object):
     # Mapping
     _relays = {
         #        I0  I1  I2  I3
-        'pins': [35, 36, 37, 38],
-        'last_known': tuple()
+        'pins': [35, 36, 37, 38]
     }
 
     def __init__(self):
@@ -203,8 +202,7 @@ class GPIO(object):
     I1 = 'I1'
     I2 = 'I2'
     I3 = 'I3'
-    HIGH = _gpio.HIGH
-    LOW = _gpio.LOW
+
     def read(self, what):
         """
         Read directly from the relay inputs I0-I3
@@ -212,24 +210,24 @@ class GPIO(object):
         If what == 'last2', a tuple will be returned (I2, I3)
         If what == 'all', a tuple will be returned (I0, I1, I2, I3)
         """
-        val0 = _gpio.input(self._relays['pins'][0])
-        val1 = _gpio.input(self._relays['pins'][1])
-        val2 = _gpio.input(self._relays['pins'][2])
-        val3 = _gpio.input(self._relays['pins'][3])
+        i0 = _gpio.input(self._relays['pins'][0])
+        i1 = _gpio.input(self._relays['pins'][1])
+        i2 = _gpio.input(self._relays['pins'][2])
+        i3 = _gpio.input(self._relays['pins'][3])
         if what == self.I0:
-            return val0
+            return i0
         elif what == self.I1:
-            return val1
+            return i1
         elif what == self.I2:
-            return val2
+            return i2
         elif what == self.I3:
-            return val3
+            return i3
         if what == 'first2':
-            return (val0, val1)
+            return i0, i1
         elif what == 'last2':
-            return (val2, val3)
+            return i2, i3
         else:
-            return (val0, val1, val2, val3)
+            return i0, i1, i2, i3
 
 if __name__ == "__main__":
     gpio = GPIO()

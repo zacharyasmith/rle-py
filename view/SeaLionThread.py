@@ -201,7 +201,11 @@ class SeaLionThread(QRunnable):
                 # relay test
                 self.signals.debug_update.emit((i, "Running: Relay test"))
                 if not gui.debug:
-                    result = ld_board.test_relay(curr['board_type'])
+                    # signalling test to use either (I0, I1) or (I2, I3)
+                    relays = None
+                    if curr['board_type'] == LDBoardTester.LD2100:
+                        relays = 'last2' if curr['GPIO_address'] == 4 else 'first2'
+                    result = ld_board.test_relay(curr['board_type'], relays)
                 else:
                     result = True
                     sleep(2)
