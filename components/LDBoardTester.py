@@ -412,7 +412,7 @@ class LDBoardTester(object):
         _LOGGER.info("LDBoardTest::test_modbus:: Failed {} test(s)".format(failing))
         return failing == 0
 
-    def test_startup_sequence(self, board=LD5200):
+    def test_startup_sequence(self, board=LD5200) -> bool:
         """
         Test internal UART, MRAM status from board reset.
 
@@ -449,7 +449,7 @@ class LDBoardTester(object):
         _LOGGER.info('LDBoardTester::test_startup_sequence:: UART 1 & 2 passed.')
         return True
 
-    def test_voltage(self):
+    def test_voltage(self) -> bool:
         """
         Test internal voltage is within allowed voltage range.
         """
@@ -466,7 +466,7 @@ class LDBoardTester(object):
         _LOGGER.info('LDBoardTester::test_voltage:: Test failed. Not within 500 mV.')
         return False
 
-    def test_datetime_set(self):
+    def test_datetime_set(self) -> bool:
         """
         Test the clock setting mechanism. Best if done initially and checking the time later.
         """
@@ -485,7 +485,7 @@ class LDBoardTester(object):
         # implies regex succeeded
         return True
 
-    def test_datetime_read(self):
+    def test_datetime_read(self) -> bool:
         """
         Test the clock read mechanism.
         """
