@@ -12,7 +12,7 @@ import os
 
 from PyQt5.QtCore import QRunnable, pyqtSlot
 from serial.serialutil import SerialException
-from tftpy import TftpClient, TftpException, TftpTimeout
+import minimumTFTP
 
 from view.SeaLionThread import WorkerSignals
 from components.LDBoardTester import LDBoardTester
@@ -101,14 +101,11 @@ class FirmwareInstaller(QRunnable):
             else:
                 self.signals.debug_update.emit((self.tray, "Uploading {}...".format(directory + file)))
                 try:
-                    client = TftpClient(LDBoardTester.ip_addresses[self.tray], 69)
-                    client.upload(file, directory + file)
-                except TftpException as e:
+                    client = minimumTFTP.Client(LDBoardTester.ip_addresses[self.tray], directory, file)
+                    client.put()
+                except Exception as e:
                     _LOGGER.error(e)
                     self.signals.debug_update.emit((self.tray, "Issue with upload"))
-                except TftpTimeout as e:
-                    _LOGGER.error(e)
-                    self.signals.debug_update.emit((self.tray, "Upload timeout"))
 
         except ConnectionRefusalException:
             _LOGGER.error("RS232 connection refused.")
