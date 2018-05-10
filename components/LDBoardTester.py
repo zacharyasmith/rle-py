@@ -503,7 +503,7 @@ class LDBoardTester(object):
             raise OperationsOutOfOrderException
         _LOGGER.info("LDBoardTester::test_datetime_read:: Testing datetime reading.")
         now = datetime.datetime.now()
-        result =  self.__serial.read_stop(b'time\n', r'(\d{2}/\d{2}/\d{2})\s+(\d{2}:\d{2}:\d{2})')
+        result = self.__serial.read_stop(b'time\n', r'(\d{2}/\d{2}/\d{2})\s+(\d{2}:\d{2}:\d{2})')
         count = 0
         # regex: 01/01/17 12:00:00
         match = re.search(r'(\d{2}/\d{2}/\d{2})\s+(\d{2}:\d{2}:\d{2})', str(result))
@@ -514,7 +514,7 @@ class LDBoardTester(object):
             _LOGGER.info("LDBoardTester::test_datetime_read:: Current datetime is {}"
                          .format(datetime.datetime.now().strftime("%m/%d/%y %H:%M:%S")))
             # parse datetime
-            dt = datetime.datetime.strptime("{} {}".format(date, time), "%H:%M:%S %m/%d/%y")
+            dt = datetime.datetime.strptime("{} {}".format(time, date), "%H:%M:%S %m/%d/%y")
             elapsed = dt - now
             _LOGGER.info("LDBoardTester::test_datetime_read:: Time delta is {} sec"
                          .format(abs(elapsed.total_seconds())))
@@ -529,6 +529,5 @@ class LDBoardTester(object):
                          .format(allowance))
             return True
         _LOGGER.error("LDBoardTester::test_datetime_read:: Expecting form "
-                     "(\d{{2}}/\d{{2}}/\d{{2}})\s+(\d{{2}}:\d{{2}}:\d{{2}})"
-                     .format(str(result)))
+                      "(\d{{2}}/\d{{2}}/\d{{2}})\s+(\d{{2}}:\d{{2}}:\d{{2}})".format(str(result)))
         return False
