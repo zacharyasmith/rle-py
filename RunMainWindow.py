@@ -407,6 +407,31 @@ class SeaLionGUI(QMainWindow, Main.Ui_MainWindow):
         subprocess.run(['leafpad', path])
         pass
 
+    def cmd_btn_handler_1(self) -> None:
+        self.cmd_btn_handler(0)
+
+    def cmd_btn_handler_2(self) -> None:
+        self.cmd_btn_handler(1)
+
+    def cmd_btn_handler_3(self) -> None:
+        self.cmd_btn_handler(2)
+
+    def cmd_btn_handler_4(self) -> None:
+        self.cmd_btn_handler(3)
+
+    def cmd_btn_handler_5(self) -> None:
+        self.cmd_btn_handler(4)
+
+    def cmd_btn_handler_6(self) -> None:
+        self.cmd_btn_handler(5)
+
+    def cmd_btn_handler(self, tray: int) -> int:
+        # self.objects[0]['board_type'] = LDBoardTester.LD2100
+        # self.objects[0]['identifier'] = "LD2100_1"
+        # self.objects[0]['GPIO_address'] = 3
+        # self.objects[0]['cmd_btn'] = self.tray1_cmd_btn
+        pass
+
 
 def main(debug=False) -> None:
     app = QApplication(sys.argv)
