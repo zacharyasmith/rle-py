@@ -1,0 +1,11 @@
+[Desktop Entry]
+Encoding=UTF-8
+Version=1.0
+Name[en_US]=SeaLion
+GenericName=SeaLion PCB Tester
+Exec=python3 /opt/SeaLion/RunMainWindow.py
+Terminal=true
+Icon[en_US]=/opt/SeaLion/DesktopIcon.png
+Type=Application
+Categories=Application;
+Comment[en_US]=SeaLion PCB Tester Launcher
