@@ -65,7 +65,7 @@ class FirmwareInstaller(QRunnable):
             # serial connection
             self.signals.debug_update.emit((self.tray, "Connecting..."))
             if not gui.debug:
-                ld_board.connect_serial(curr['mac'])
+                ld_board.connect_serial()
             else:
                 sleep(2)
 
