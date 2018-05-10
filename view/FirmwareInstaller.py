@@ -83,7 +83,8 @@ class FirmwareInstaller(QRunnable):
                 sleep(2)
 
             # write file via TFTP
-            directories = ['~/Desktop/', '~/']
+            user_profile = os.environ['USERPROFILE']
+            directories = [user_profile + '/Desktop/', user_profile + '/']
             directory = None
             file = None
             for d in directories:
