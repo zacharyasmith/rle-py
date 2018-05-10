@@ -386,7 +386,6 @@ class SeaLionGUI(QMainWindow, Main.Ui_MainWindow):
         for i in range(6):
             if self.objects[i]['log_path']:
                 self.set_info_btn_disabled(i, False)
-        # TODO write results to file
 
     """
     Each of the buttons have their own handler

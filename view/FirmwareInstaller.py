@@ -51,7 +51,7 @@ class FirmwareInstaller(QRunnable):
 
         # setup logging
         # writes to logging directory with identifier
-        if curr['log_path']:
+        if 'log_path' in curr:
             for handler in logging.root.handlers[:]:
                 logging.root.removeHandler(handler)
             logging.basicConfig(filename=curr['log_path'], filemode='a', level=logging.INFO,
