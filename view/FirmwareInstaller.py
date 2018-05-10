@@ -84,7 +84,7 @@ class FirmwareInstaller(QRunnable):
 
             # write file via TFTP
             user_profile = os.environ['USERPROFILE']
-            directories = [user_profile + '/Desktop/', user_profile + '/']
+            directories = ['/home/pi/Desktop/', '/home/pi/']
             directory = None
             file = None
             for d in directories:
