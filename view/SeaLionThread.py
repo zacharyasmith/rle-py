@@ -326,7 +326,7 @@ class SeaLionThread(QRunnable):
                 # LED test
                 self.signals.debug_update.emit((i, "Running: LED test"))
                 if not gui.debug:
-                    result = ld_board.test_led()
+                    result = ld_board.test_led(curr['board_type'])
                 else:
                     result = True
                     sleep(2)

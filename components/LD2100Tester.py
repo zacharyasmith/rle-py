@@ -70,7 +70,7 @@ class LD2100Tester(LDBoard):
                 sleep(.1)
                 self.process_test_result('rs485_modbus', ld_board.test_modbus(LDBoardTester.LD2100))
             if args['led'] or all:
-                self.process_test_result('led_test', ld_board.test_led())
+                self.process_test_result('led_test', ld_board.test_led(LDBoardTester.LD2100))
         except ConnectionRefusalException:
                 _LOGGER.error("RS232 connection refused.")
                 self.process_test_result('rs232_connection', False)

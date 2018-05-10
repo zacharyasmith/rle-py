@@ -61,7 +61,7 @@ class LD5200Tester(LDBoard):
                 if args['current']:
                     self.process_test_result('output_current', ld_board.output_current())
             if args['led'] or all:
-                self.process_test_result('led_test', ld_board.test_led())
+                self.process_test_result('led_test', ld_board.test_led(LDBoardTester.LD5200))
         except ConnectionRefusalException:
             _LOGGER.error("RS232 connection refused.")
             self.process_test_result('rs232_connection', False)
