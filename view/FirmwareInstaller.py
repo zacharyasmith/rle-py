@@ -62,10 +62,6 @@ class FirmwareInstaller(QRunnable):
 
         ld_board = LDBoardTester(gpio)
         try:
-            # check for signals
-            if self.__check_signals(self.tray):
-                return
-
             # serial connection
             self.signals.debug_update.emit((self.tray, "Connecting..."))
             if not gui.debug:
