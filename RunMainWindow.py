@@ -54,7 +54,7 @@ class SeaLionGUI(QMainWindow, Main.Ui_MainWindow):
         self.objects[0]['board_label'] = self.tray1_board_label
         self.objects[0]['label'] = self.tray1_label
         self.tray1_info_btn.clicked.connect(self.info_btn_handler_1)
-        self.tray1_cmd_btn.clicked.connect(self.cmd_btn_handler_1())
+        self.tray1_cmd_btn.clicked.connect(self.cmd_btn_handler_1)
 
         # LD2100 Tray 2 : GPIO address 4
         self.objects[1]['board_type'] = LDBoardTester.LD2100
@@ -68,7 +68,7 @@ class SeaLionGUI(QMainWindow, Main.Ui_MainWindow):
         self.objects[1]['board_label'] = self.tray2_board_label
         self.objects[1]['label'] = self.tray2_label
         self.tray2_info_btn.clicked.connect(self.info_btn_handler_2)
-        self.tray2_cmd_btn.clicked.connect(self.cmd_btn_handler_2())
+        self.tray2_cmd_btn.clicked.connect(self.cmd_btn_handler_2)
 
         # LD2100 Tray 3 : GPIO address 3
         self.objects[2]['board_type'] = LDBoardTester.LD2100
@@ -82,7 +82,7 @@ class SeaLionGUI(QMainWindow, Main.Ui_MainWindow):
         self.objects[2]['board_label'] = self.tray3_board_label
         self.objects[2]['label'] = self.tray3_label
         self.tray3_info_btn.clicked.connect(self.info_btn_handler_3)
-        self.tray3_cmd_btn.clicked.connect(self.cmd_btn_handler_3())
+        self.tray3_cmd_btn.clicked.connect(self.cmd_btn_handler_3)
 
         # LD5200 Tray 4 : GPIO address 0
         self.objects[3]['board_type'] = LDBoardTester.LD5200
@@ -96,7 +96,7 @@ class SeaLionGUI(QMainWindow, Main.Ui_MainWindow):
         self.objects[3]['board_label'] = self.tray4_board_label
         self.objects[3]['label'] = self.tray4_label
         self.tray4_info_btn.clicked.connect(self.info_btn_handler_4)
-        self.tray4_cmd_btn.clicked.connect(self.cmd_btn_handler_4())
+        self.tray4_cmd_btn.clicked.connect(self.cmd_btn_handler_4)
 
         # LD5200 Tray 5 : GPIO address 1
         self.objects[4]['board_type'] = LDBoardTester.LD5200
@@ -110,7 +110,7 @@ class SeaLionGUI(QMainWindow, Main.Ui_MainWindow):
         self.objects[4]['board_label'] = self.tray5_board_label
         self.objects[4]['label'] = self.tray5_label
         self.tray5_info_btn.clicked.connect(self.info_btn_handler_5)
-        self.tray5_cmd_btn.clicked.connect(self.cmd_btn_handler_5())
+        self.tray5_cmd_btn.clicked.connect(self.cmd_btn_handler_5)
 
         # LD5200 Tray 6 : GPIO address 2
         self.objects[5]['board_type'] = LDBoardTester.LD5200
@@ -124,7 +124,7 @@ class SeaLionGUI(QMainWindow, Main.Ui_MainWindow):
         self.objects[5]['board_label'] = self.tray6_board_label
         self.objects[5]['label'] = self.tray6_label
         self.tray6_info_btn.clicked.connect(self.info_btn_handler_6)
-        self.tray6_cmd_btn.clicked.connect(self.cmd_btn_handler_6())
+        self.tray6_cmd_btn.clicked.connect(self.cmd_btn_handler_6)
 
         self.reset_trays()
         self.pause_btn.setDisabled(True)
