@@ -328,6 +328,7 @@ class SeaLionGUI(QMainWindow, Main.Ui_MainWindow):
         """
         self.update_progress(-1, 0, 1)
         self.update_debug_text(-1, "Awaiting start.")
+        self.status_bar.showMessage("")
         self.set_info_btn_disabled(-1, True)
         self.set_status(-1, self.WAITING)
 

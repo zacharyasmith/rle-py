@@ -110,9 +110,10 @@ class SeaLionThread(QRunnable):
             curr['log_path'] = path
 
             # Info log
+            _LOGGER.info('Current log path: {}'.format(curr['log_path']))
             _LOGGER.info('Board/tray: {}'.format(curr['identifier']))
             _LOGGER.info('Serial number: {}'.format(curr['serial']))
-            _LOGGER.info('MAC address: {}'.format(curr['mac']))
+            _LOGGER.info('MAC address: {}\n'.format(curr['mac']))
 
             # GPIO
             if not gui.debug:
@@ -146,6 +147,7 @@ class SeaLionThread(QRunnable):
                 if not result:
                     continue
 
+                _LOGGER.info('--')  # line break in log
                 # check for signals
                 if self.__check_signals(i):
                     return
@@ -162,6 +164,7 @@ class SeaLionThread(QRunnable):
                 curr['passing'] = curr['passing'] and result
                 self.signals.update.emit((i, "Done: Datetime write"))
 
+                _LOGGER.info('--')  # line break in log
                 # check for signals
                 if self.__check_signals(i):
                     return
@@ -178,6 +181,7 @@ class SeaLionThread(QRunnable):
                 curr['passing'] = curr['passing'] and result
                 self.signals.update.emit((i, "Done: Startup sequence test"))
 
+                _LOGGER.info('--')  # line break in log
                 # check for signals
                 if self.__check_signals(i):
                     return
@@ -194,6 +198,7 @@ class SeaLionThread(QRunnable):
                 curr['passing'] = curr['passing'] and result
                 self.signals.update.emit((i, "Done: Voltage level check"))
 
+                _LOGGER.info('--')  # line break in log
                 # check for signals
                 if self.__check_signals(i):
                     return
@@ -214,6 +219,7 @@ class SeaLionThread(QRunnable):
                 curr['passing'] = curr['passing'] and result
                 self.signals.update.emit((i, "Done: Relay test"))
 
+                _LOGGER.info('--')  # line break in log
                 # check for signals
                 if self.__check_signals(i):
                     return
@@ -230,6 +236,7 @@ class SeaLionThread(QRunnable):
                 curr['passing'] = curr['passing'] and result
                 self.signals.update.emit((i, "Done: Cable emulator (length)"))
 
+                _LOGGER.info('--')  # line break in log
                 # check for signals
                 if self.__check_signals(i):
                     return
@@ -246,6 +253,7 @@ class SeaLionThread(QRunnable):
                 curr['passing'] = curr['passing'] and result
                 self.signals.update.emit((i, "Done: Cable emulator (short)"))
 
+                _LOGGER.info('--')  # line break in log
                 # check for signals
                 if self.__check_signals(i):
                     return
@@ -287,6 +295,7 @@ class SeaLionThread(QRunnable):
                 gpio.stage(GPIO.RS485, 3)
                 gpio.commit()
 
+                _LOGGER.info('--')  # line break in log
                 # check for signals
                 if self.__check_signals(i):
                     return
@@ -303,6 +312,7 @@ class SeaLionThread(QRunnable):
                 curr['passing'] = curr['passing'] and result
                 self.signals.update.emit((i, "Done: Datetime read"))
 
+                _LOGGER.info('--')  # line break in log
                 # check for signals
                 if self.__check_signals(i):
                     return
@@ -319,6 +329,7 @@ class SeaLionThread(QRunnable):
                 curr['passing'] = curr['passing'] and result
                 self.signals.update.emit((i, "Done writing IP address"))
 
+                _LOGGER.info('--')  # line break in log
                 # check for signals
                 if self.__check_signals(i):
                     return
@@ -335,6 +346,7 @@ class SeaLionThread(QRunnable):
                 curr['passing'] = curr['passing'] and result
                 self.signals.update.emit((i, "Done: LED test"))
 
+                _LOGGER.info('--')  # line break in log
                 # 4-20 mA test
                 if curr['board_type'] == LDBoardTester.LD5200:
                     # check for signals
