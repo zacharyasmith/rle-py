@@ -39,16 +39,16 @@ class FirmwareInstaller(QRunnable):
         gui = self.gui
         logging_format = '%(levelname)s::%(message)s'
 
+        # transfer for easier typing
+        curr = self.gui.objects[self.tray]
+
         # GPIO
         if not gui.debug:
             gpio = GPIO()
         else:
             gpio = None
-        gpio.stage(GPIO.BOARD, self.tray)
+        gpio.stage(GPIO.BOARD, curr['GPIO_address'])
         gpio.commit()
-
-        # transfer for easier typing
-        curr = self.gui.objects[self.tray]
 
         # setup logging
         # writes to logging directory with identifier
