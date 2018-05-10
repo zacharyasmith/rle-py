@@ -6,16 +6,19 @@ Author:
     Zachary Smith
 """
 import sys
-
 import argparse
+import re
+import threading
+from datetime import datetime
+
 from PyQt5.QtWidgets import QMainWindow, QApplication, QInputDialog, QErrorMessage, QMessageBox
 from PyQt5.QtCore import QThreadPool
-import re
-from view.SeaLionThread import SeaLionThread, TimeUpdater
+
+from view.SeaLionThread import SeaLionThread
+from view.TimeUpdater import TimeUpdater
+from view.FirmwareInstaller import FirmwareInstaller
 import view.MainWindow as Main
 from components.LDBoardTester import LDBoardTester
-from datetime import datetime
-import threading
 
 
 class SeaLionGUI(QMainWindow, Main.Ui_MainWindow):
@@ -51,6 +54,7 @@ class SeaLionGUI(QMainWindow, Main.Ui_MainWindow):
         self.objects[0]['board_label'] = self.tray1_board_label
         self.objects[0]['label'] = self.tray1_label
         self.tray1_info_btn.clicked.connect(self.info_btn_handler_1)
+        self.tray1_cmd_btn.clicked.connect(self.cmd_btn_handler_1())
 
         # LD2100 Tray 2 : GPIO address 4
         self.objects[1]['board_type'] = LDBoardTester.LD2100
@@ -64,6 +68,7 @@ class SeaLionGUI(QMainWindow, Main.Ui_MainWindow):
         self.objects[1]['board_label'] = self.tray2_board_label
         self.objects[1]['label'] = self.tray2_label
         self.tray2_info_btn.clicked.connect(self.info_btn_handler_2)
+        self.tray2_cmd_btn.clicked.connect(self.cmd_btn_handler_2())
 
         # LD2100 Tray 3 : GPIO address 3
         self.objects[2]['board_type'] = LDBoardTester.LD2100
@@ -77,6 +82,7 @@ class SeaLionGUI(QMainWindow, Main.Ui_MainWindow):
         self.objects[2]['board_label'] = self.tray3_board_label
         self.objects[2]['label'] = self.tray3_label
         self.tray3_info_btn.clicked.connect(self.info_btn_handler_3)
+        self.tray3_cmd_btn.clicked.connect(self.cmd_btn_handler_3())
 
         # LD5200 Tray 4 : GPIO address 0
         self.objects[3]['board_type'] = LDBoardTester.LD5200
@@ -90,6 +96,7 @@ class SeaLionGUI(QMainWindow, Main.Ui_MainWindow):
         self.objects[3]['board_label'] = self.tray4_board_label
         self.objects[3]['label'] = self.tray4_label
         self.tray4_info_btn.clicked.connect(self.info_btn_handler_4)
+        self.tray4_cmd_btn.clicked.connect(self.cmd_btn_handler_4())
 
         # LD5200 Tray 5 : GPIO address 1
         self.objects[4]['board_type'] = LDBoardTester.LD5200
@@ -103,6 +110,7 @@ class SeaLionGUI(QMainWindow, Main.Ui_MainWindow):
         self.objects[4]['board_label'] = self.tray5_board_label
         self.objects[4]['label'] = self.tray5_label
         self.tray5_info_btn.clicked.connect(self.info_btn_handler_5)
+        self.tray5_cmd_btn.clicked.connect(self.cmd_btn_handler_5())
 
         # LD5200 Tray 6 : GPIO address 2
         self.objects[5]['board_type'] = LDBoardTester.LD5200
@@ -116,6 +124,7 @@ class SeaLionGUI(QMainWindow, Main.Ui_MainWindow):
         self.objects[5]['board_label'] = self.tray6_board_label
         self.objects[5]['label'] = self.tray6_label
         self.tray6_info_btn.clicked.connect(self.info_btn_handler_6)
+        self.tray6_cmd_btn.clicked.connect(self.cmd_btn_handler_6())
 
         self.reset_trays()
         self.pause_btn.setDisabled(True)
@@ -380,7 +389,7 @@ class SeaLionGUI(QMainWindow, Main.Ui_MainWindow):
         # TODO write results to file
 
     """
-    Each of the info buttons have their own handler
+    Each of the buttons have their own handler
     """
     def info_btn_handler_1(self) -> None:
         self.info_btn_handler(0)
@@ -426,10 +435,26 @@ class SeaLionGUI(QMainWindow, Main.Ui_MainWindow):
         self.cmd_btn_handler(5)
 
     def cmd_btn_handler(self, tray: int) -> int:
-        # self.objects[0]['board_type'] = LDBoardTester.LD2100
-        # self.objects[0]['identifier'] = "LD2100_1"
-        # self.objects[0]['GPIO_address'] = 3
-        # self.objects[0]['cmd_btn'] = self.tray1_cmd_btn
+        # disable buttons
+        self.set_cmd_btn_diabled(-1, True)
+        self.set_info_btn_disabled(-1, True)
+        # enable pause/cancel
+        self.pause_btn.setDisabled(True)
+        self.cancel_btn.setDisabled(True)
+        self.resume_btn.setDisabled(True)
+        # starting the worker
+        installer = FirmwareInstaller(self, tray)
+        installer.signals.finished.connect(self._signal_test_finished)
+        installer.signals.alert.connect(self._signal_alert)
+        installer.signals.debug_update.connect(self._signal_debug_update)
+        self.thread_pool.start(installer)
+        # test started
+        self.testing = True
+        self.test_start = datetime.now()
+        time_thread = TimeUpdater(self)
+        time_thread.signals.status_bar.connect(self._signal_status_bar)
+        self.thread_pool.start(time_thread)
+        return
         pass
 
 
