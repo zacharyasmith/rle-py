@@ -384,7 +384,7 @@ class SeaLionGUI(QMainWindow, Main.Ui_MainWindow):
         self.cancel = False
         self.thread_lock.release()
         for i in range(6):
-            if self.objects[i]['log_path']:
+            if 'log_path' in self.objects[i]:
                 self.set_info_btn_disabled(i, False)
 
     """

@@ -99,15 +99,11 @@ class FirmwareInstaller(QRunnable):
                 self.signals.debug_update.emit((self.tray, "File not found!"))
             else:
                 self.signals.debug_update.emit((self.tray, "Uploading {}...".format(directory + file)))
-                try:
-                    self.signals.alert.emit(("Open terminal.",
-                                             "Change to `{}`, run `tftp {}`, `binary`, `put {}`"
-                                             .format(directory,
-                                                     LDBoardTester.ip_addresses[self.tray], file)))
-                    subprocess.run(['lxterminal'])
-                except Exception as e:
-                    _LOGGER.error(e)
-                    self.signals.debug_update.emit((self.tray, "Issue with upload"))
+                self.signals.alert.emit(("Open terminal.",
+                                         "Change to `{}`, run `tftp {}`, `binary`, `put {}`"
+                                         .format(directory,
+                                                 LDBoardTester.ip_addresses[self.tray], file)))
+                subprocess.run(['lxterminal'])
 
         except ConnectionRefusalException:
             _LOGGER.error("RS232 connection refused.")
