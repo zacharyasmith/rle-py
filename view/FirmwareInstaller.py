@@ -5,19 +5,19 @@ Author:
     Zachary Smith
 """
 
-import logging
-from time import sleep
 import fnmatch
+import logging
 import os
+from time import sleep
 
 from PyQt5.QtCore import QRunnable, pyqtSlot
 from serial.serialutil import SerialException
-import minimumTFTP
+import subprocess
 
-from view.SeaLionThread import WorkerSignals
-from components.LDBoardTester import LDBoardTester
-from components.GPIO import GPIO
 from components.Exceptions import ConnectionRefusalException
+from components.GPIO import GPIO
+from components.LDBoardTester import LDBoardTester
+from view.SeaLionThread import WorkerSignals
 
 _LOGGER = logging.getLogger()
 
@@ -101,8 +101,13 @@ class FirmwareInstaller(QRunnable):
             else:
                 self.signals.debug_update.emit((self.tray, "Uploading {}...".format(directory + file)))
                 try:
-                    client = minimumTFTP.Client(LDBoardTester.ip_addresses[self.tray], directory, file)
-                    client.put()
+                    self.signals.alert.emit(("Opening terminal...",
+                                             "Change to `{}`, run `tftp {}`, `binary`, `put {}`"
+                                             .format(directory,
+                                                     LDBoardTester.ip_addresses[self.tray], file)))
+                    command = ['lxterminal']
+                    p = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+                    p.wait()
                 except Exception as e:
                     _LOGGER.error(e)
                     self.signals.debug_update.emit((self.tray, "Issue with upload"))
