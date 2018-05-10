@@ -356,31 +356,55 @@ class Ui_MainWindow(object):
         self.tray1_label.setText(_translate("MainWindow", "<html><head/><body><p align=\"center\">1</p></body></html>"))
         self.tray1_debug.setText(_translate("MainWindow", "Running test: <test name>"))
         self.tray1_info_btn.setText(_translate("MainWindow", "Info"))
+<<<<<<< HEAD
+        self.tray1_cmd_btn.setText(_translate("MainWindow", "Install"))
+=======
         self.tray1_cmd_btn.setText(_translate("MainWindow", "Cmd"))
+>>>>>>> parent of d51d160... Change text.
         self.tray1_board_label.setText(_translate("MainWindow", "<html><head/><body><p>LD2100</p></body></html>"))
         self.tray3_label.setText(_translate("MainWindow", "<html><head/><body><p align=\"center\">3</p></body></html>"))
         self.tray3_debug.setText(_translate("MainWindow", "Running test: <test name>"))
         self.tray3_info_btn.setText(_translate("MainWindow", "Info"))
+<<<<<<< HEAD
+        self.tray3_cmd_btn.setText(_translate("MainWindow", "Install"))
+=======
         self.tray3_cmd_btn.setText(_translate("MainWindow", "Cmd"))
+>>>>>>> parent of d51d160... Change text.
         self.tray3_board_label.setText(_translate("MainWindow", "<html><head/><body><p>LD2100</p></body></html>"))
         self.tray2_label.setText(_translate("MainWindow", "<html><head/><body><p align=\"center\">2</p></body></html>"))
         self.tray2_debug.setText(_translate("MainWindow", "Running test: <test name>"))
         self.tray2_info_btn.setText(_translate("MainWindow", "Info"))
+<<<<<<< HEAD
+        self.tray2_cmd_btn.setText(_translate("MainWindow", "Install"))
+=======
         self.tray2_cmd_btn.setText(_translate("MainWindow", "Cmd"))
+>>>>>>> parent of d51d160... Change text.
         self.tray2_board_label.setText(_translate("MainWindow", "<html><head/><body><p>LD2100</p></body></html>"))
         self.tray6_label.setText(_translate("MainWindow", "<html><head/><body><p align=\"center\">6</p></body></html>"))
         self.tray6_debug.setText(_translate("MainWindow", "Running test: <test name>"))
         self.tray6_info_btn.setText(_translate("MainWindow", "Info"))
+<<<<<<< HEAD
+        self.tray6_cmd_btn.setText(_translate("MainWindow", "Install"))
+=======
         self.tray6_cmd_btn.setText(_translate("MainWindow", "Cmd"))
+>>>>>>> parent of d51d160... Change text.
         self.tray6_board_label.setText(_translate("MainWindow", "<html><head/><body><p>LD5200</p></body></html>"))
         self.tray4_label.setText(_translate("MainWindow", "<html><head/><body><p align=\"center\">4</p></body></html>"))
         self.tray4_debug.setText(_translate("MainWindow", "Running test: <test name>"))
         self.tray4_info_btn.setText(_translate("MainWindow", "Info"))
+<<<<<<< HEAD
+        self.tray4_cmd_btn.setText(_translate("MainWindow", "Install"))
+=======
         self.tray4_cmd_btn.setText(_translate("MainWindow", "Cmd"))
+>>>>>>> parent of d51d160... Change text.
         self.tray4_board_label.setText(_translate("MainWindow", "<html><head/><body><p>LD5200</p></body></html>"))
         self.tray5_label.setText(_translate("MainWindow", "<html><head/><body><p align=\"center\">5</p></body></html>"))
         self.tray5_debug.setText(_translate("MainWindow", "Running test: <test name>"))
         self.tray5_info_btn.setText(_translate("MainWindow", "Info"))
+<<<<<<< HEAD
+        self.tray5_cmd_btn.setText(_translate("MainWindow", "Install"))
+=======
         self.tray5_cmd_btn.setText(_translate("MainWindow", "Cmd"))
+>>>>>>> parent of d51d160... Change text.
         self.tray5_board_label.setText(_translate("MainWindow", "<html><head/><body><p>LD5200</p></body></html>"))
 
