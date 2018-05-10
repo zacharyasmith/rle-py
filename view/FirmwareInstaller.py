@@ -48,7 +48,7 @@ class FirmwareInstaller(QRunnable):
         gpio.commit()
 
         # transfer for easier typing
-        curr = self.tray_object
+        curr = self.gui.objects[self.tray]
 
         # setup logging
         # writes to logging directory with identifier
@@ -100,13 +100,11 @@ class FirmwareInstaller(QRunnable):
             else:
                 self.signals.debug_update.emit((self.tray, "Uploading {}...".format(directory + file)))
                 try:
-                    self.signals.alert.emit(("Opening terminal...",
+                    self.signals.alert.emit(("Open terminal.",
                                              "Change to `{}`, run `tftp {}`, `binary`, `put {}`"
                                              .format(directory,
                                                      LDBoardTester.ip_addresses[self.tray], file)))
-                    command = ['lxterminal']
-                    p = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-                    p.wait()
+                    subprocess.run(['lxterminal'])
                 except Exception as e:
                     _LOGGER.error(e)
                     self.signals.debug_update.emit((self.tray, "Issue with upload"))
