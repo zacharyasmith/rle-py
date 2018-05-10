@@ -1,9 +1,12 @@
+_____________________________
 For any updates to the codebase, run `sudo ./install.sh`. There will be an executable in the menu bar.
 This can then be linked to the desktop.
 
+_____________________________
 To manually use the test system, run `./main.py -h`. This is useful for ad-hoc tests that do not use
 the entire test suite.
 
+_____________________________
 To manually use the PCBs to change the state of the circuit, run the following in a `python3` console:
 >>> from components.GPIO import GPIO
 >>> gpio=GPIO()
@@ -16,3 +19,7 @@ The above was an example. The GPIO library MUST be committed after a stage.
 
 To use the RS232 terminal along with the GPIO library, open up PuTTY and open a serial comm link
 with `/dev/rleRS232` as the serial line (there should be a profile by default).
+
+_____________________________
+On a fresh installation (on a new Raspberry Pi) the `trigger.sh` file under `udev-rules` must be ran
+with root privileges. Change your directory into the folder before executing it.
