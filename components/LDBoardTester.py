@@ -152,7 +152,8 @@ class LDBoardTester(object):
         if board == LDBoardTester.LD5200:
             # Wait for reset to complete
             _LOGGER.info('LDBoardTest::test_led:: Waiting for board reset.')
-            sleep(12)
+            sleep(10)
+            self.__serial._verify_connection()
         _LOGGER.info('LDBoardTest::test_led:: Read {} V.'.format(val))
         if not ((expected - tolerance) <= val):
             _LOGGER.info('LDBoardTest::test_led:: Not within tolerance. LED *might* not be working')
