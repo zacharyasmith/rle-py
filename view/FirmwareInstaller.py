@@ -14,6 +14,7 @@ from PyQt5.QtCore import QRunnable, pyqtSlot
 from serial.serialutil import SerialException
 import subprocess
 
+from components.IOUtilities import get_log_path
 from components.Exceptions import ConnectionRefusalException
 from components.GPIO import GPIO
 from components.LDBoardTester import LDBoardTester
@@ -51,11 +52,13 @@ class FirmwareInstaller(QRunnable):
 
         # setup logging
         # writes to logging directory with identifier
-        if 'log_path' in curr:
-            for handler in logging.root.handlers[:]:
-                logging.root.removeHandler(handler)
-            logging.basicConfig(filename=curr['log_path'], filemode='a', level=logging.INFO,
-                                format=logging_format)
+        for handler in logging.root.handlers[:]:
+            logging.root.removeHandler(handler)
+        path = get_log_path(curr['identifier'])
+        logging.basicConfig(filename=path, filemode='a', level=logging.INFO,
+                            format=logging_format)
+        curr['log_path'] = path
+
         # Info log
         _LOGGER.info('')
         _LOGGER.info('Installing firmware...')
@@ -83,7 +86,6 @@ class FirmwareInstaller(QRunnable):
                 sleep(2)
 
             # write file via TFTP
-            user_profile = os.environ['USERPROFILE']
             directories = ['/home/pi/Desktop/', '/home/pi/']
             directory = None
             file = None
